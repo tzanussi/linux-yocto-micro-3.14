@@ -990,6 +990,16 @@ config VM86
 	  XFree86 to initialize some video cards via BIOS. Disabling this
 	  option saves about 6k.
 
+config X86_IOPORT
+	bool "iopl and ioperm system calls"
+	default y
+	---help---
+	  This option enables the iopl and ioperm system calls, which allow
+	  privileged userspace processes to directly access I/O ports. This
+	  is used by some legacy software to drive hardware directly from
+	  userspace rather than via a proper kernel driver. Unless you intend
+	  to run such software, you can safely say N here.
+
 config TOSHIBA
 	tristate "Toshiba Laptop support"
 	depends on X86_32
