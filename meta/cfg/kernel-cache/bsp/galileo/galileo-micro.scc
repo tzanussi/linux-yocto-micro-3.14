@@ -1,0 +1,8 @@
+define KMACHINE galileo
+define KTYPE micro
+define KARCH x86
+
+include ktypes/micro/micro.scc
+branch galileo
+
+include galileo.scc
