@@ -953,8 +953,9 @@ static void * __init efi_map_regions(int *count)
 		md = p;
 		if (!(md->attribute & EFI_MEMORY_RUNTIME)) {
 #ifdef CONFIG_X86_64
-			if (md->type != EFI_BOOT_SERVICES_CODE &&
-			    md->type != EFI_BOOT_SERVICES_DATA)
+			if (!(bgrt_map &&
+			      (md->type == EFI_BOOT_SERVICES_CODE ||
+			       md->type == EFI_BOOT_SERVICES_DATA)))
 #endif
 				continue;
 		}
