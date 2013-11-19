@@ -41,12 +41,31 @@
 #define WDTBASE		0x84
 #define WDT_IO_SIZE	64
 
+/* BIOS control reg */
+#define LPC_BIOS_CNTL	0xD8
+#define LPC_BIOS_CNTL_WE 0x01
+
+/* Root complex base address derived registers */
+#define RCBA_BASE	0xF0
+
 static struct resource smbus_sch_resource = {
 		.flags = IORESOURCE_IO,
 };
 
 static struct resource gpio_sch_resource = {
 		.flags = IORESOURCE_IO,
+};
+
+static struct resource spi_res = {
+	.flags		= IORESOURCE_MEM,
+	.start		= 0,
+	.end		= 0,
+};
+
+static struct platform_device lpc_sch_spi = {
+	.name 		= "spi-lpc-sch",
+	.id 		= -1,
+	.resource	= &spi_res,
 };
 
 static struct resource wdt_sch_resource = {
@@ -90,22 +109,26 @@ static int lpc_sch_probe(struct pci_dev *dev,
 {
 	unsigned int base_addr_cfg;
 	unsigned short base_addr;
+	u32 rcba_base, bios_cntl;
 	int i, cells = 0;
 	int ret;
 
-	pci_read_config_dword(dev, SMBASE, &base_addr_cfg);
-	base_addr = 0;
-	if (!(base_addr_cfg & (1 << 31)))
-		dev_warn(&dev->dev, "Decode of the SMBus I/O range disabled\n");
-	else
-		base_addr = (unsigned short)base_addr_cfg;
+	/* Clanton does not support iLB SMBUS */
+	if (id->device != PCI_DEVICE_ID_INTEL_CLANTON_ILB) {
+		pci_read_config_dword(dev, SMBASE, &base_addr_cfg);
+		base_addr = 0;
+		if (!(base_addr_cfg & (1 << 31)))
+			dev_warn(&dev->dev, "Decode of the SMBus I/O range disabled\n");
+		else
+			base_addr = (unsigned short)base_addr_cfg;
 
-	if (base_addr == 0) {
-		dev_warn(&dev->dev, "I/O space for SMBus uninitialized\n");
-	} else {
-		lpc_sch_cells[cells++] = isch_smbus_cell;
-		smbus_sch_resource.start = base_addr;
-		smbus_sch_resource.end = base_addr + SMBUS_IO_SIZE - 1;
+		if (base_addr == 0) {
+			dev_warn(&dev->dev, "I/O space for SMBus uninitialized\n");
+		} else {
+			lpc_sch_cells[cells++] = isch_smbus_cell;
+			smbus_sch_resource.start = base_addr;
+			smbus_sch_resource.end = base_addr + SMBUS_IO_SIZE - 1;
+		}
 	}
 
 	pci_read_config_dword(dev, GPIOBASE, &base_addr_cfg);
@@ -148,7 +171,7 @@ static int lpc_sch_probe(struct pci_dev *dev,
 	ret = platform_device_register(&lpc_sch_spi);
 	if (ret < 0){
 		pr_err("unable to register %s plat dev\n", lpc_sch_spi.name);
-		goto out_dev;
+		return ret;
 	}
 
 	if (id->device == PCI_DEVICE_ID_INTEL_ITC_LPC
