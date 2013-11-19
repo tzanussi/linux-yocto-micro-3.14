@@ -1,0 +1,7 @@
+branch micro
+
+# Minimal requirements e.g. just printk-lite
+kconf required min.cfg
+
+# Luxuries e.g. /proc
+kconf required micro.cfg
