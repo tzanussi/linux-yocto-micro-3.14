@@ -25,6 +25,22 @@ struct bmp_header {
 	u32 size;
 } __packed;
 
+bool __init efi_bgrt_probe(void)
+{
+        acpi_status status;
+
+        if (acpi_disabled)
+                return false;
+
+        bgrt_tab = NULL;
+        status = acpi_get_table("BGRT", 0,
+                                (struct acpi_table_header **)&bgrt_tab);
+        if (ACPI_FAILURE(status))
+                return false;
+
+        return true;
+}
+
 void __init efi_bgrt_init(void)
 {
 	acpi_status status;
@@ -32,7 +48,7 @@ void __init efi_bgrt_init(void)
 	bool ioremapped = false;
 	struct bmp_header bmp_header;
 
-	if (acpi_disabled)
+	if (acpi_disabled || bgrt_tab == NULL)
 		return;
 
 	status = acpi_get_table("BGRT", 0,
