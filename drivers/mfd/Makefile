@@ -135,6 +135,13 @@ obj-$(CONFIG_AB8500_CORE)	+= ab8500-core.o ab8500-sysctrl.o
 obj-$(CONFIG_MFD_TIMBERDALE)    += timberdale.o
 obj-$(CONFIG_PMIC_ADP5520)	+= adp5520.o
 obj-$(CONFIG_MFD_KEMPLD)	+= kempld-core.o
+obj-$(CONFIG_CY8C9540A)		+= cy8c9540a.o
+obj-$(CONFIG_INTEL_CLN_GIP)	+= intel_cln_gip.o
+intel_cln_gip-objs		:= intel_cln_gip_core.o \
+					intel_cln_gip_gpio.o \
+					intel_cln_gip_i2c.o \
+					../i2c/busses/i2c-designware-core.o
+obj-$(CONFIG_INTEL_CLN_GIP_TEST)+=intel_cln_gip_test.o
 obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
 obj-$(CONFIG_LPC_ICH)		+= lpc_ich.o
 obj-$(CONFIG_MFD_RDC321X)	+= rdc321x-southbridge.o
