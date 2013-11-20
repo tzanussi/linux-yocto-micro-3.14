@@ -374,16 +374,16 @@ struct stmmac_dma_ops {
 	void (*rx_watchdog) (void __iomem *ioaddr, u32 riwt);
 };
 
+struct stmmac_priv;
 struct stmmac_ops {
 	/* MAC core initialization */
 	void (*core_init) (void __iomem *ioaddr, int mtu);
 	/* Enable and verify that the IPC module is supported */
-	int (*rx_ipc) (void __iomem *ioaddr);
+	int (*set_rx_ipc) (void __iomem *ioaddr, bool on);
 	/* Dump MAC registers */
 	void (*dump_regs) (void __iomem *ioaddr);
 	/* Handle extra events on specific interrupts hw dependent */
-	int (*host_irq_status) (void __iomem *ioaddr,
-				struct stmmac_extra_stats *x);
+	int (*host_irq_status) (struct stmmac_priv * priv);
 	/* Multicast filter setting */
 	void (*set_filter) (struct net_device *dev, int id);
 	/* Flow control setting */
