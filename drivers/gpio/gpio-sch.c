@@ -260,6 +260,14 @@ static int sch_gpio_probe(struct platform_device *pdev)
 		sch_gpio_resume.ngpio = 9;
 		break;
 
+	case PCI_DEVICE_ID_INTEL_CLANTON_ILB:
+		sch_gpio_core.base = 0;
+		sch_gpio_core.ngpio = 2;
+
+		sch_gpio_resume.base = 2;
+		sch_gpio_resume.ngpio = 6;
+		break;
+
 	default:
 		err = -ENODEV;
 		goto err_sch_gpio_core;
