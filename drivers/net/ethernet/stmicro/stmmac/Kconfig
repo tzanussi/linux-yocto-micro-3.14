@@ -77,4 +77,25 @@ config STMMAC_DA
 	  By default, the DMA arbitration scheme is based on Round-robin
 	  (rx:tx priority is 1:1).
 
+config STMMAC_PTP
+	bool "STMMAC PTP (1588-2005) Clock Support"
+	default n
+	depends on EXPERIMENTAL
+	select PPS
+	select PTP_1588_CLOCK
+	---help---
+	  Say Y here if you want support for 1588 Timestamping with a
+	  Clanton device, using the PTP 1588 Clock support. This is
+	  required to enable timestamping support for the device.
+
+	  If unsure, say N.
+
+config STMMAC_PTP_CLK_MHZ
+	depends on STMMAC_PTP
+	int "Reference clock in Mhz"
+	default 50
+	---help---
+	  Frequency if MHz of the reference clock used to derive PTP time
+	  locally. Permissable values are 1 - 255 inclusive
+
 endif
