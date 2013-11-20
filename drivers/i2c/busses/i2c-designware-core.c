@@ -467,6 +467,7 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
 	u32 buf_len = dev->tx_buf_len;
 	u8 *buf = dev->tx_buf;
 	bool need_restart = false;
+        int segment_start = 0;
 
 	intr_mask = DW_IC_INTR_DEFAULT_MASK;
 
@@ -490,10 +491,12 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
 			break;
 		}
 
+                segment_start = 0;
 		if (!(dev->status & STATUS_WRITE_IN_PROGRESS)) {
 			/* new i2c_msg */
 			buf = msgs[dev->msg_write_idx].buf;
 			buf_len = msgs[dev->msg_write_idx].len;
+			segment_start = 1;
 
 			/* If both IC_EMPTYFIFO_HOLD_MASTER_EN and
 			 * IC_RESTART_EN are set, we must manually
@@ -507,8 +510,20 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
 		tx_limit = dev->tx_fifo_depth - dw_readl(dev, DW_IC_TXFLR);
 		rx_limit = dev->rx_fifo_depth - dw_readl(dev, DW_IC_RXFLR);
 
+		/*
+		 * The maximum number of read requests that can be put into TX
+		 * FIFO depends on the number read operations already pending
+		 * in RX FIFO + the number of outstanding read operations still
+		 * queued in the TX FIFO.
+		 * This prevents RX FIFO overrun.
+		 */
+		rx_limit -= dev->rx_outstanding;
+
 		while (buf_len > 0 && tx_limit > 0 && rx_limit > 0) {
 			u32 cmd = 0;
+
+			data_cmd.fields.data = 0x00;
+			data_cmd.fields.cmd = 0x00;
 
 			/*
 			 * If IC_EMPTYFIFO_HOLD_MASTER_EN is set we must
@@ -531,11 +546,40 @@ i2c_dw_xfer_msg(struct dw_i2c_dev *dev)
 				if (rx_limit - dev->rx_outstanding <= 0)
 					break;
 
-				dw_writel(dev, cmd | 0x100, DW_IC_DATA_CMD);
+				/* Master-receiver */
+				data_cmd.fields.cmd = DW_IC_CMD_READ;
 				rx_limit--;
 				dev->rx_outstanding++;
-			} else
-				dw_writel(dev, cmd | *buf++, DW_IC_DATA_CMD);
+			} else {
+				/* Master-transmitter */
+				data_cmd.fields.data = *buf;
+				buf++;
+			}
+
+			if (1 == dev->explicit_stop
+			    && 1 == segment_start) {
+				/*
+				 * First byte of a transaction segment for a
+				 * device requiring explicit transaction
+				 * termination: generate (re)start symbol.
+				 */
+				segment_start = 0;
+				data_cmd.fields.cmd |= DW_IC_CMD_RESTART;
+			}
+
+			if (1 == dev->explicit_stop
+			    && dev->msg_write_idx == dev->msgs_num - 1
+			    && 1 == buf_len) {
+				/*
+				 * Last byte of last transction segment for a
+				 * device requiring explicit transaction
+				 * termination: generate stop symbol.
+				 */
+				data_cmd.fields.cmd |= DW_IC_CMD_STOP;
+			}
+
+			dw_writel(dev, data_cmd.value, DW_IC_DATA_CMD);
+
 			tx_limit--; buf_len--;
 		}
 
