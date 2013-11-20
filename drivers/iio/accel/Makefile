@@ -4,7 +4,7 @@
 
 # When adding new entries keep the list in alphabetical order
 obj-$(CONFIG_BMA180) += bma180.o
-obj-$(CONFIG_HID_SENSOR_ACCEL_3D) += hid-sensor-accel-3d.o
+obj-$(CONFIG_IIO_LIS331DLH_INTEL_CLN) += lis331dlh_intel_cln.o
 obj-$(CONFIG_KXSD9)	+= kxsd9.o
 
 obj-$(CONFIG_IIO_ST_ACCEL_3AXIS) += st_accel.o
