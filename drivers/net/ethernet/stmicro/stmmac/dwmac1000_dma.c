@@ -59,9 +59,12 @@ static int dwmac1000_dma_init(void __iomem *ioaddr, int pbl, int fb, int mb,
 	 * DMA transfers the data in 8, 16, 32, 64, 128 & 256 beats
 	 * depending on pbl value.
 	 */
+#ifdef CONFIG_INTEL_QUARK_X1000_SOC
+	value = DMA_BUS_MODE_RIX | (pbl << DMA_BUS_MODE_PBL_SHIFT);
+#else
 	value = DMA_BUS_MODE_PBL | ((pbl << DMA_BUS_MODE_PBL_SHIFT) |
 				    (pbl << DMA_BUS_MODE_RPBL_SHIFT));
-
+#endif
 	/* Set the Fixed burst mode */
 	if (fb)
 		value |= DMA_BUS_MODE_FB;
