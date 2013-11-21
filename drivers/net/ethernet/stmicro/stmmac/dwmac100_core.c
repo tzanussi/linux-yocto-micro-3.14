@@ -66,12 +66,12 @@ static void dwmac100_dump_mac_regs(void __iomem *ioaddr)
 		readl(ioaddr + MAC_VLAN2));
 }
 
-static int dwmac100_rx_ipc_enable(void __iomem *ioaddr)
+static int dwmac100_set_rx_ipc(void __iomem *ioaddr, bool on)
 {
 	return 0;
 }
 
-static int dwmac100_irq_status(void __iomem *ioaddr,
+static int dwmac100_irq_status(struct stmmac_priv *priv,
 			       struct stmmac_extra_stats *x)
 {
 	return 0;
