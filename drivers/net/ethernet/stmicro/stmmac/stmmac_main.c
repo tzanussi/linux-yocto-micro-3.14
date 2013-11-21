@@ -1662,9 +1662,12 @@ static int stmmac_hw_setup(struct net_device *dev)
 		pr_warn("%s: failed PTP initialisation\n", __func__);
 
 #ifdef CONFIG_STMMAC_DEBUG_FS
-	ret = stmmac_init_fs(dev);
-	if (ret < 0)
-		pr_warn("%s: failed debugFS registration\n", __func__);
+	if (debugfs_registered == 0){
+		debugfs_registered = 1;
+		ret = stmmac_init_fs(dev);
+		if (ret < 0)
+			pr_warning("%s: failed debugFS registration\n", __func__);
+	}
 #endif
 	/* Start the ball rolling... */
 	pr_debug("%s: DMA RX/TX processes started...\n", dev->name);
@@ -2167,7 +2170,9 @@ static int stmmac_rx(struct stmmac_priv *priv, int limit)
 			stmmac_rx_vlan(priv->dev, skb);
 
 			skb->protocol = eth_type_trans(skb, priv->dev);
-
+#ifdef CONFIG_STMMAC_PTP
+			stmmac_ptp_tx_hwtstamp(priv, priv->dma_rx + entry, skb);
+#endif
 			if (unlikely(!coe))
 				skb_checksum_none_assert(skb);
 			else
@@ -2327,8 +2332,18 @@ static netdev_features_t stmmac_fix_features(struct net_device *dev,
 	if (priv->plat->bugged_jumbo && (dev->mtu > ETH_DATA_LEN))
 		features &= ~NETIF_F_ALL_CSUM;
 
+	stmmac_hw_set_rx_ipc(priv, features & NETIF_F_RXCSUM);
+
 	return features;
 }
+
+#if defined(CONFIG_INTEL_QUARK_X1000_SOC)
+	#define mask_pvm(x) cln_pci_pvm_mask(x)
+	#define unmask_pvm(x) cln_pci_pvm_unmask(x)
+#else
+	#define mask_pvm(x)
+	#define unmask_pvm(x)
+#endif
 
 /**
  *  stmmac_interrupt - main ISR
@@ -2351,11 +2366,13 @@ static irqreturn_t stmmac_interrupt(int irq, void *dev_id)
 		return IRQ_NONE;
 	}
 
+	mask_pvm(priv->pdev);
+
 	/* To handle GMAC own interrupts */
 	if (priv->plat->has_gmac) {
-		int status = priv->hw->mac->host_irq_status((void __iomem *)
-							    dev->base_addr,
+		int status = priv->hw->mac->host_irq_status(priv,
 							    &priv->xstats);
+
 		if (unlikely(status)) {
 			/* For LPI we need to save the tx status */
 			if (status & CORE_IRQ_TX_PATH_IN_LPI_MODE)
@@ -2410,9 +2427,15 @@ static int stmmac_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
 			return -EINVAL;
 		ret = phy_mii_ioctl(priv->phydev, rq, cmd);
 		break;
+#ifdef CONFIG_STMMAC_PTP
+	case SIOCSHWTSTAMP:
+		ret = stmmac_ptp_hwtstamp_ioctl(priv, rq, cmd);
+		break;
+#else
 	case SIOCSHWTSTAMP:
 		ret = stmmac_hwtstamp_ioctl(dev, rq);
 		break;
+#endif
 	default:
 		break;
 	}
@@ -2708,11 +2731,7 @@ static int stmmac_hw_init(struct stmmac_priv *priv)
 	/* To use alternate (extended) or normal descriptor structures */
 	stmmac_selec_desc_mode(priv);
 
-	ret = priv->hw->mac->rx_ipc(priv->ioaddr);
-	if (!ret) {
-		pr_warn(" RX IPC Checksum Offload not configured.\n");
-		priv->plat->rx_coe = STMMAC_RX_COE_NONE;
-	}
+	ret = stmmac_hw_set_rx_ipc(priv, true);
 
 	if (priv->plat->rx_coe)
 		pr_info(" RX Checksum Offload Engine supported (type %d)\n",
@@ -2851,6 +2870,9 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
 	else
 		priv->clk_csr = priv->plat->clk_csr;
 
+#ifdef CONFIG_STMMAC_PTP
+	stmmac_ptp_init(ndev, device);
+#endif
 	stmmac_check_pcs_mode(priv);
 
 	if (priv->pcs != STMMAC_PCS_RGMII && priv->pcs != STMMAC_PCS_TBI &&
@@ -2870,6 +2892,9 @@ error_mdio_register:
 	unregister_netdev(ndev);
 error_netdev_register:
 	netif_napi_del(&priv->napi);
+#ifdef CONFIG_STMMAC_PTP
+	stmmac_ptp_remove(priv);
+#endif
 error_hw_init:
 	clk_disable_unprepare(priv->stmmac_clk);
 error_clk_get:
