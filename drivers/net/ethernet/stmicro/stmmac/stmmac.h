@@ -55,6 +55,17 @@ struct stmmac_priv {
 	bool tx_path_in_lpi_mode;
 	struct timer_list txtimer;
 
+	/* PTP */
+	struct ptp_clock *ptp_clock;
+	struct ptp_clock_info ptp_caps;
+	struct delayed_work overflow_work;
+	spinlock_t tmreg_lock;
+	struct cyclecounter ccnt;
+	struct timecounter tcnt;
+//	struct timecompare tcmp;
+	int hwts;
+	struct stmmac_timer *tm;
+
 	struct dma_desc *dma_rx	____cacheline_aligned_in_smp;
 	struct dma_extended_desc *dma_erx;
 	struct sk_buff **rx_skbuff;
@@ -90,9 +101,12 @@ struct stmmac_priv {
 	struct stmmac_counters mmc;
 	int hw_cap_support;
 	int synopsys_id;
+	int irqmode_msi;
+	struct pci_dev * pdev;
 	u32 msg_enable;
 	int wolopts;
 	int wol_irq;
+	int active_vlans;
 	struct clk *stmmac_clk;
 	struct reset_control *stmmac_rst;
 	int clk_csr;
