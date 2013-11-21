@@ -57,6 +57,7 @@ static int ce4100_spi_probe(struct pci_dev *dev,
 	struct platform_device *pdev;
 	struct pxa2xx_spi_master spi_pdata;
 	struct ssp_device *ssp;
+	unsigned int id;
 
 	ret = pcim_enable_device(dev);
 	if (ret)
@@ -67,9 +68,10 @@ static int ce4100_spi_probe(struct pci_dev *dev,
 		return ret;
 
 	memset(&spi_pdata, 0, sizeof(spi_pdata));
-	spi_pdata.num_chipselect = dev->devfn;
+	spi_pdata.num_chipselect = CE4200_NUM_CHIPSELECT;
 
 	ssp = &spi_pdata.ssp;
+	ssp->pcidev = dev;
 	ssp->phys_base = pci_resource_start(dev, 0);
 	ssp->mmio_base = pcim_iomap_table(dev)[0];
 	if (!ssp->mmio_base) {
@@ -78,7 +80,20 @@ static int ce4100_spi_probe(struct pci_dev *dev,
 	}
 	ssp->irq = dev->irq;
 	ssp->port_id = dev->devfn;
-	ssp->type = PXA25x_SSP;
+#ifdef CONFIG_INTEL_QUARK_X1000_SOC
+	id = CE5300_SOC_DEVICE_ID;
+#else
+	intelce_get_soc_info(&id, NULL);
+#endif
+	switch (id) {
+	case CE5300_SOC_DEVICE_ID:
+		ssp->type = CE5X00_SSP;
+		break;
+	case CE4200_SOC_DEVICE_ID:
+	default:
+		ssp->type = CE4100_SSP;
+		break;
+	}
 
 	memset(&pi, 0, sizeof(pi));
 	pi.parent = &dev->dev;
@@ -91,7 +106,23 @@ static int ce4100_spi_probe(struct pci_dev *dev,
 	if (IS_ERR(pdev))
 		return PTR_ERR(pdev);
 
+	pdev->id = interface;
+	pdev->dev.parent = &dev->dev;
+#ifdef CONFIG_OF
+	pdev->dev.of_node = dev->dev.of_node;
+#endif
+	pci_set_master(dev);
+	if (enable_msi == 1) {
+		ret = pci_enable_msi(dev);
+		if (ret) {
+			dev_err(&dev->dev, "failed to allocate MSI entry\n");
+			platform_device_unregister(pdev);
+			return ret;
+		}
+	}
 	pci_set_drvdata(dev, pdev);
+
+	interface++;
 
 	return 0;
 }
@@ -100,11 +131,34 @@ static void ce4100_spi_remove(struct pci_dev *dev)
 {
 	struct platform_device *pdev = pci_get_drvdata(dev);
 
+	if (enable_msi == 1) {
+		if (pci_dev_msi_enabled(dev))
+			pci_disable_msi(dev);
+	}
+
 	platform_device_unregister(pdev);
 }
 
+#ifdef CONFIG_PM
+static int ce4XXX_spi_suspend(struct pci_dev *dev, pm_message_t state)
+{
+	pci_save_state(dev);
+	pci_set_power_state(dev, pci_choose_state(dev, state));
+	return 0;
+}
+
+static int ce4XXX_spi_resume(struct pci_dev *dev)
+{
+	pci_set_power_state(dev, PCI_D0);
+	pci_restore_state(dev);
+
+	return 0;
+}
+#endif
+
 static const struct pci_device_id ce4100_spi_devices[] = {
 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x2e6a) },
+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x0935) },
 	{ },
 };
 MODULE_DEVICE_TABLE(pci, ce4100_spi_devices);
@@ -113,6 +167,10 @@ static struct pci_driver ce4100_spi_driver = {
 	.name           = "ce4100_spi",
 	.id_table       = ce4100_spi_devices,
 	.probe          = ce4100_spi_probe,
+#ifdef CONFIG_PM
+	.suspend        = ce4XXX_spi_suspend,
+	.resume         = ce4XXX_spi_resume,
+#endif
 	.remove         = ce4100_spi_remove,
 };
 
