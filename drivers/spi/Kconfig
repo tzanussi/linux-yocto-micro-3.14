@@ -384,12 +384,21 @@ config SPI_PXA2XX
 	depends on (ARCH_PXA || PCI || ACPI)
 	select PXA_SSP if ARCH_PXA
 	help
-	  This enables using a PXA2xx or Sodaville SSP port as a SPI master
+	  This enables using a PXA2xx or Intel CE4100/CE4200/CE5300 port as a SPI master
 	  controller. The driver can be configured to use any SSP port and
 	  additional documentation can be found a Documentation/spi/pxa2xx.
 
 config SPI_PXA2XX_PCI
-	def_tristate SPI_PXA2XX && PCI
+        tristate "Intel CE SPI PCI adapter"
+	depends on SPI_PXA2XX && X86_32 && PCI && GEN3_SPI
+	help
+	  This driver supports the Intel CE SPI master controller and acts
+	  as the PCI-SPI glue code for PXA's driver
+
+config SPI_CE5XX_SPI_SLAVE
+	tristate "CE5XX SPI SLAVE"
+	help
+	  This selects a driver for CE5XX SPI Slave controler, it is emudulated into a spi device
 
 config SPI_RSPI
 	tristate "Renesas RSPI/QSPI controller"
