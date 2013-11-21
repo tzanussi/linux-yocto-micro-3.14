@@ -98,6 +98,7 @@ static void dwmac1000_get_umac_addr(void __iomem *ioaddr, unsigned char *addr,
 static void dwmac1000_set_filter(struct net_device *dev, int id)
 {
 	void __iomem *ioaddr = (void __iomem *)dev->base_addr;
+	struct stmmac_priv *priv = netdev_priv(dev);
 	unsigned int value = 0;
 	unsigned int perfect_addr_number;
 
@@ -210,10 +211,14 @@ static void dwmac1000_pmt(void __iomem *ioaddr, unsigned long mode)
 	writel(pmt, ioaddr + GMAC_PMT);
 }
 
-static int dwmac1000_irq_status(void __iomem *ioaddr,
+#ifndef CONFIG_STMMAC_PTP
+#define stmmac_ptp_check_pps_event(x){}
+#endif
+
+static int dwmac1000_irq_status(struct stmmac_priv *priv,
 				struct stmmac_extra_stats *x)
 {
-	u32 intr_status = readl(ioaddr + GMAC_INT_STATUS);
+	u32 intr_status = readl(priv->ioaddr + GMAC_INT_STATUS);
 	int ret = 0;
 
 	/* Not used events (e.g. MMC interrupts) are not handled. */
@@ -225,13 +230,13 @@ static int dwmac1000_irq_status(void __iomem *ioaddr,
 		x->mmc_rx_csum_offload_irq_n++;
 	if (unlikely(intr_status & pmt_irq)) {
 		/* clear the PMT bits 5 and 6 by reading the PMT status reg */
-		readl(ioaddr + GMAC_PMT);
+		readl(priv->ioaddr + GMAC_PMT);
 		x->irq_receive_pmt_irq_n++;
 	}
 	/* MAC trx/rx EEE LPI entry/exit interrupts */
 	if (intr_status & lpiis_irq) {
 		/* Clean LPI interrupt by reading the Reg 12 */
-		ret = readl(ioaddr + LPI_CTRL_STATUS);
+		ret = readl(priv->ioaddr + LPI_CTRL_STATUS);
 
 		if (ret & LPI_CTRL_STATUS_TLPIEN)
 			x->irq_tx_path_in_lpi_mode_n++;
@@ -244,11 +249,11 @@ static int dwmac1000_irq_status(void __iomem *ioaddr,
 	}
 
 	if ((intr_status & pcs_ane_irq) || (intr_status & pcs_link_irq)) {
-		readl(ioaddr + GMAC_AN_STATUS);
+		readl(priv->ioaddr + GMAC_AN_STATUS);
 		x->irq_pcs_ane_n++;
 	}
 	if (intr_status & rgmii_irq) {
-		u32 status = readl(ioaddr + GMAC_S_R_GMII);
+		u32 status = readl(priv->ioaddr + GMAC_S_R_GMII);
 		x->irq_rgmii_n++;
 
 		/* Save and dump the link status. */
@@ -273,8 +278,108 @@ static int dwmac1000_irq_status(void __iomem *ioaddr,
 			pr_debug("%s: Link is Down\n", __func__);
 		}
 	}
+	if (unlikely(intr_status & time_stamp_irq)){
+		stmmac_ptp_check_pps_event(priv);
+	}
 
 	return ret;
+}
+
+static unsigned int dwmac1000_calc_vlan_4bit_crc ( const char * vlan )
+{
+	int i = 0, j = 0, len = 0, bit = 0;
+	unsigned int crc = 0xFFFFFFFF;
+	unsigned int poly = 0x04C11DB7;
+	unsigned char data;
+
+	if(unlikely(vlan == NULL)){
+		return 0;
+	}
+
+	for( i = 0; i < 2; i++ ) {
+		data = vlan[i];
+
+		if (i==0){
+			len = 8;
+		}else{
+			len = 4;
+		}
+
+		for( bit = 0; bit < len; bit++ ) {
+
+			j = ((crc >> 31) ^ data) & 0x1;
+			crc <<= 1;
+
+			if( j != 0 ){
+				crc ^= poly;
+			}
+
+			data >>= 1;
+		}
+	}
+	return crc;
+
+}
+
+static int dwmac1000_vlan_rx_add_vid(struct stmmac_priv *priv, unsigned short vid)
+{
+	u32 reg = 0;
+	u32 bit_nr = 0;
+
+	if(unlikely(priv == NULL || vid > GMAC_VLAN_HASH_MAXID)){
+		return -EINVAL;
+	}
+
+	if(priv->active_vlans == 0){
+
+		/* Flip the VTFE bit in GMAC_FRAME_FILTER */
+		reg = readl(priv->ioaddr + GMAC_FRAME_FILTER);
+		reg |= GMAC_FRAME_FILTER_VTFE;
+		writel(reg, priv->ioaddr + GMAC_FRAME_FILTER);
+
+		/* Enable hash filtering - based on 12 bit vid */
+		reg = readl(priv->ioaddr + GMAC_VLAN_TAG);
+		reg |= GMAC_VLAN_TAG_VTHM | GMAC_VLAN_TAG_ETV | 0x0000FFFF;
+		writel(reg, priv->ioaddr + GMAC_VLAN_TAG);
+	}
+
+	bit_nr = (~dwmac1000_calc_vlan_4bit_crc((const char*)&vid)) >> 28;
+	priv->active_vlans |= 1 << bit_nr;
+
+	writel(priv->active_vlans, priv->ioaddr + GMAC_VLAN_HASH);
+
+	return 0;
+}
+
+static int dwmac1000_vlan_rx_kill_vid(struct stmmac_priv *priv, unsigned short vid)
+{
+	u32 reg = 0;
+	u32 bit_nr = 0;
+
+	if(unlikely(priv == NULL || vid > GMAC_VLAN_HASH_MAXID)){
+		return -EINVAL;
+	}
+
+	bit_nr = (~dwmac1000_calc_vlan_4bit_crc((const char*)&vid)) >> 28;
+
+	priv->active_vlans &= ~(1 << bit_nr);
+	writel(priv->active_vlans, priv->ioaddr + GMAC_VLAN_HASH);
+
+	if(priv->active_vlans == 0){
+
+		/* Disable hash filtering */
+		reg = readl(priv->ioaddr + GMAC_VLAN_TAG);
+		reg &= ~(GMAC_VLAN_TAG_VTHM | GMAC_VLAN_TAG_ETV | 0x00000001);
+		writel(reg, priv->ioaddr + GMAC_VLAN_TAG);
+
+		/* Flip the VTFE bit in GMAC_FRAME_FILTER */
+		reg = readl(priv->ioaddr + GMAC_FRAME_FILTER);
+		reg &= ~GMAC_FRAME_FILTER_VTFE;
+		writel(reg, priv->ioaddr + GMAC_FRAME_FILTER);
+
+	}
+
+	return 0;
 }
 
 static void dwmac1000_set_eee_mode(void __iomem *ioaddr)
@@ -373,6 +478,8 @@ static const struct stmmac_ops dwmac1000_ops = {
 	.pmt = dwmac1000_pmt,
 	.set_umac_addr = dwmac1000_set_umac_addr,
 	.get_umac_addr = dwmac1000_get_umac_addr,
+	.vlan_rx_add_vid = dwmac1000_vlan_rx_add_vid,
+	.vlan_rx_kill_vid = dwmac1000_vlan_rx_kill_vid,
 	.set_eee_mode = dwmac1000_set_eee_mode,
 	.reset_eee_mode = dwmac1000_reset_eee_mode,
 	.set_eee_timer = dwmac1000_set_eee_timer,

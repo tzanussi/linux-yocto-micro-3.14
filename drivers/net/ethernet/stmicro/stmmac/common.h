@@ -383,7 +383,8 @@ struct stmmac_ops {
 	/* Dump MAC registers */
 	void (*dump_regs) (void __iomem *ioaddr);
 	/* Handle extra events on specific interrupts hw dependent */
-	int (*host_irq_status) (struct stmmac_priv * priv);
+	int (*host_irq_status) (struct stmmac_priv * priv,
+				struct stmmac_extra_stats *x);
 	/* Multicast filter setting */
 	void (*set_filter) (struct net_device *dev, int id);
 	/* Flow control setting */
