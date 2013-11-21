@@ -265,31 +265,53 @@ static int stmmac_pci_probe(struct pci_dev *pdev,
 		break;
 	}
 	pci_set_master(pdev);
+	if(enable_msi == 1){
+		pci_enable_msi(pdev);
+		pr_info("stmmac MSI mode enabled");
+	}
 
-	stmmac_default_data();
+	pr_info("Vendor 0x%04x Device 0x%04x\n",
+		id->vendor, id->device);
 
-	priv = stmmac_dvr_probe(&(pdev->dev), &plat_dat, addr);
+	priv = stmmac_dvr_probe(&(pdev->dev), plat_dat, addr);
 	if (IS_ERR(priv)) {
 		pr_err("%s: main driver probe failed", __func__);
 		ret = PTR_ERR(priv);
 		goto err_out;
 	}
+
+	stmmac_pci_find_mac(priv, bus_id);
+
 	priv->dev->irq = pdev->irq;
 	priv->wol_irq = pdev->irq;
+	priv->irqmode_msi = enable_msi;
+	priv->pdev = pdev;
+	#ifdef CONFIG_INTEL_QUARK_X1000_SOC
+	priv->lpi_irq = -ENXIO;
+	#endif
 
 	pci_set_drvdata(pdev, priv->dev);
 
 	pr_debug("STMMAC platform driver registration completed");
+	bus_id++;
 
 	return 0;
 
 err_out:
 	pci_clear_master(pdev);
-err_out_map_failed:
 	pci_release_regions(pdev);
 err_out_req_reg_failed:
 	pci_disable_device(pdev);
-
+err_platdata:
+	if (plat_dat != NULL){
+		if (plat_dat->dma_cfg != NULL)
+			kfree (plat_dat->dma_cfg);
+		if (plat_dat->mdio_bus_data != NULL)
+			kfree (plat_dat->mdio_bus_data);
+		kfree(plat_dat);
+	}
+err_out_map_failed:
+	bus_id++;
 	return ret;
 }
 
