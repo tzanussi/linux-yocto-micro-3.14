@@ -197,6 +197,7 @@ enum pxa_ssp_type {
 	PXA910_SSP,
 	CE4100_SSP,
 	LPSS_SSP,
+	CE5X00_SSP,
 };
 
 struct ssp_device {
@@ -214,6 +215,7 @@ struct ssp_device {
 	int		irq;
 	int		drcmr_rx;
 	int		drcmr_tx;
+	struct pci_dev  *pcidev;
 
 	struct device_node	*of_node;
 };
@@ -244,6 +246,7 @@ static inline u32 pxa_ssp_read_reg(struct ssp_device *dev, u32 reg)
 #ifdef CONFIG_ARCH_PXA
 struct ssp_device *pxa_ssp_request(int port, const char *label);
 void pxa_ssp_free(struct ssp_device *);
+int pxa_msi_enabled(void);
 struct ssp_device *pxa_ssp_request_of(const struct device_node *of_node,
 				      const char *label);
 #else
