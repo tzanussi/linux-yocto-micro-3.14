@@ -833,6 +833,48 @@ static int handshake(void __iomem *ptr, u32 mask, u32 done,
 	return -ETIMEDOUT;
 }
 
+#define PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC		0x0939
+bool usb_is_intel_cln(struct pci_dev *pdev)
+{
+	return pdev->vendor == PCI_VENDOR_ID_INTEL &&
+		pdev->device == PCI_DEVICE_ID_INTEL_QUARK_X1000_SOC;
+
+}
+EXPORT_SYMBOL_GPL(usb_is_intel_cln);
+
+#define EHCI_INSNREG01		0x84
+#define EHCI_INSNREG01_THRESH	0x007F007F	/* Threshold value */
+void usb_set_cln_bulk_thresh(struct pci_dev *pdev)
+{
+	void __iomem *base, *op_reg_base;
+	u8 cap_length;
+	u32 val;
+
+	if (!mmio_resource_enabled(pdev, 0))
+		return;
+
+	base = pci_ioremap_bar(pdev, 0);
+	if (base == NULL)
+		return;
+
+	cap_length = readb(base);
+	op_reg_base = base + cap_length;
+
+	val = readl(op_reg_base + EHCI_INSNREG01);
+	dev_printk(KERN_INFO, &pdev->dev, "INSNREG01 is 0x%08x\n", val);
+
+	val = EHCI_INSNREG01_THRESH;
+
+	writel(val, op_reg_base + EHCI_INSNREG01);
+
+	val = readl(op_reg_base + EHCI_INSNREG01);
+	dev_printk(KERN_INFO, &pdev->dev, "INSNREG01 is 0x%08x\n", val);
+
+	iounmap(base);
+
+}
+EXPORT_SYMBOL_GPL(usb_set_cln_bulk_thresh);
+
 /*
  * Intel's Panther Point chipset has two host controllers (EHCI and xHCI) that
  * share some number of ports.  These ports can be switched between either
