@@ -376,14 +376,17 @@ struct pch_udc_dev {
 	struct usb_ctrlrequest		setup_data;
 	unsigned long			phys_addr;
 	void __iomem			*base_addr;
+	unsigned			bar;
 	unsigned			irq;
 	struct pch_udc_cfg_data		cfg_data;
 	struct pch_vbus_gpio_data	vbus_gpio;
 };
 #define to_pch_udc(g)	(container_of((g), struct pch_udc_dev, gadget))
 
-#define PCH_UDC_PCI_BAR			1
+#define PCH_UDC_PCI_BAR_CLANTON		0
+#define PCH_UDC_PCI_BAR_EG20T		1
 #define PCI_DEVICE_ID_INTEL_EG20T_UDC	0x8808
+#define PCI_DEVICE_ID_INTEL_CLANTON_UDC	0x0939
 #define PCI_VENDOR_ID_ROHM		0x10DB
 #define PCI_DEVICE_ID_ML7213_IOH_UDC	0x801D
 #define PCI_DEVICE_ID_ML7831_IOH_UDC	0x8808
