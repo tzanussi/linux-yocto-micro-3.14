@@ -20,12 +20,7 @@
 
 #define ST_SENSORS_WAI_ADDRESS		0x0f
 
-static inline u32 st_sensors_get_unaligned_le24(const u8 *p)
-{
-	return (s32)((p[0] | p[1] << 8 | p[2] << 16) << 8) >> 8;
-}
-
-static int st_sensors_write_data_with_mask(struct iio_dev *indio_dev,
+int st_sensors_write_data_with_mask(struct iio_dev *indio_dev,
 						u8 reg_addr, u8 mask, u8 data)
 {
 	int err;
@@ -42,6 +37,7 @@ static int st_sensors_write_data_with_mask(struct iio_dev *indio_dev,
 st_sensors_write_data_with_mask_error:
 	return err;
 }
+EXPORT_SYMBOL(st_sensors_write_data_with_mask);
 
 static int st_sensors_match_odr(struct st_sensors *sensor,
 			unsigned int odr, struct st_sensor_odr_avl *odr_out)
@@ -117,8 +113,7 @@ st_sensors_match_odr_error:
 	return ret;
 }
 
-static int st_sensors_set_fullscale(struct iio_dev *indio_dev,
-								unsigned int fs)
+static int st_sensors_set_fullscale(struct iio_dev *indio_dev, unsigned int fs)
 {
 	int err, i = 0;
 	struct st_sensor_data *sdata = iio_priv(indio_dev);
@@ -228,18 +223,14 @@ static int st_sensors_set_drdy_int_pin(struct iio_dev *indio_dev,
 	return 0;
 }
 
-int st_sensors_init_sensor(struct iio_dev *indio_dev,
-					struct st_sensors_platform_data *pdata)
+int st_sensors_init_sensor(struct iio_dev *indio_dev)
 {
 	struct st_sensor_data *sdata = iio_priv(indio_dev);
 	int err = 0;
 
 	mutex_init(&sdata->tb.buf_lock);
 
-	if (pdata)
-		err = st_sensors_set_drdy_int_pin(indio_dev, pdata);
-
-	err = st_sensors_set_enable(indio_dev, false);
+	err = st_sensors_set_enable(indio_dev, true);
 	if (err < 0)
 		return err;
 
@@ -270,7 +261,6 @@ EXPORT_SYMBOL(st_sensors_init_sensor);
 int st_sensors_set_dataready_irq(struct iio_dev *indio_dev, bool enable)
 {
 	int err;
-	u8 drdy_mask;
 	struct st_sensor_data *sdata = iio_priv(indio_dev);
 
 	if (!sdata->sensor->drdy_irq.addr)
@@ -285,14 +275,10 @@ int st_sensors_set_dataready_irq(struct iio_dev *indio_dev, bool enable)
 			goto st_accel_set_dataready_irq_error;
 	}
 
-	if (sdata->drdy_int_pin == 1)
-		drdy_mask = sdata->sensor->drdy_irq.mask_int1;
-	else
-		drdy_mask = sdata->sensor->drdy_irq.mask_int2;
-
 	/* Enable/Disable the interrupt generator for data ready. */
 	err = st_sensors_write_data_with_mask(indio_dev,
-			sdata->sensor->drdy_irq.addr, drdy_mask, (int)enable);
+			sdata->sensor->drdy_irq.addr,
+			sdata->sensor->drdy_irq.mask, (int)enable);
 
 st_accel_set_dataready_irq_error:
 	return err;
@@ -323,31 +309,20 @@ st_sensors_match_scale_error:
 EXPORT_SYMBOL(st_sensors_set_fullscale_by_gain);
 
 static int st_sensors_read_axis_data(struct iio_dev *indio_dev,
-				struct iio_chan_spec const *ch, int *data)
+							u8 ch_addr, int *data)
 {
 	int err;
-	u8 *outdata;
+	u8 outdata[ST_SENSORS_BYTE_FOR_CHANNEL];
 	struct st_sensor_data *sdata = iio_priv(indio_dev);
-	unsigned int byte_for_channel = ch->scan_type.storagebits >> 3;
-
-	outdata = kmalloc(byte_for_channel, GFP_KERNEL);
-	if (!outdata)
-		return -ENOMEM;
 
 	err = sdata->tf->read_multiple_byte(&sdata->tb, sdata->dev,
-				ch->address, byte_for_channel,
+				ch_addr, ST_SENSORS_BYTE_FOR_CHANNEL,
 				outdata, sdata->multiread_bit);
 	if (err < 0)
-		goto st_sensors_free_memory;
+		goto read_error;
 
-	if (byte_for_channel == 2)
-		*data = (s16)get_unaligned_le16(outdata);
-	else if (byte_for_channel == 3)
-		*data = (s32)st_sensors_get_unaligned_le24(outdata);
-
-st_sensors_free_memory:
-	kfree(outdata);
-
+	*data = (s16)get_unaligned_le16(outdata);
+read_error:
 	return err;
 }
 
@@ -355,27 +330,13 @@ int st_sensors_read_info_raw(struct iio_dev *indio_dev,
 				struct iio_chan_spec const *ch, int *val)
 {
 	int err;
-	struct st_sensor_data *sdata = iio_priv(indio_dev);
 
 	mutex_lock(&indio_dev->mlock);
-	if (indio_dev->currentmode == INDIO_BUFFER_TRIGGERED) {
-		err = -EBUSY;
-		goto out;
-	} else {
-		err = st_sensors_set_enable(indio_dev, true);
-		if (err < 0)
-			goto out;
-
-		msleep((sdata->sensor->bootime * 1000) / sdata->odr);
-		err = st_sensors_read_axis_data(indio_dev, ch, val);
-		if (err < 0)
-			goto out;
-
-		*val = *val >> ch->scan_type.shift;
-
-		err = st_sensors_set_enable(indio_dev, false);
-	}
-out:
+	err = st_sensors_read_axis_data(indio_dev, ch->address, val);
+	if (err < 0)
+ 		goto read_error;
+	*val = *val >> ch->scan_type.shift;
+read_error:
 	mutex_unlock(&indio_dev->mlock);
 
 	return err;
