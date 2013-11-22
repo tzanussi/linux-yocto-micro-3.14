@@ -60,5 +60,12 @@ struct pxa2xx_spi_chip {
 
 extern void pxa2xx_set_spi_info(unsigned id, struct pxa2xx_spi_master *info);
 
+#ifndef CONFIG_GEN3_SPI
+static inline unsigned long clk_get_rate(struct clk *clk)
+{
+	return 3686400;
+}
+#endif
+
 #endif
 #endif
