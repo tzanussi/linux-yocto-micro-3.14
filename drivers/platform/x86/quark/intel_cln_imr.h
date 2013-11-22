@@ -109,7 +109,7 @@
 #endif
 
 extern unsigned long  _text;
-extern unsigned long  __init_begin;
+extern char  __init_begin[];
 
 /**
  * intel_cln_imr_alloc
