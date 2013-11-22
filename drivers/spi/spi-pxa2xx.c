@@ -1582,19 +1582,19 @@ static int setup(struct spi_device *spi)
 		dev_dbg(&spi->dev, "%ld Hz actual, %s\n",
 #ifndef CONFIG_GEN3_SPI
 			drv_data->max_clk_rate
-				/ (1 + ((chip->cr0 & SSCR0_SCR(0xfff)) >> 8)),
 #else
 			spi_clk_get_rate(drv_data->ssp_type)
 #endif
+				/ (1 + ((chip->cr0 & SSCR0_SCR(0xfff)) >> 8)),
 			chip->enable_dma ? "DMA" : "PIO");
 	else
 		dev_dbg(&spi->dev, "%ld Hz actual, %s\n",
 #ifndef CONFIG_GEN3_SPI
 			drv_data->max_clk_rate / 2
-				/ (1 + ((chip->cr0 & SSCR0_SCR(0x0ff)) >> 8)),
 #else
 			spi_clk_get_rate(drv_data->ssp_type) / 2
 #endif
+				/ (1 + ((chip->cr0 & SSCR0_SCR(0x0ff)) >> 8)),
 			chip->enable_dma ? "DMA" : "PIO");
 
 	if (spi->bits_per_word <= 8) {

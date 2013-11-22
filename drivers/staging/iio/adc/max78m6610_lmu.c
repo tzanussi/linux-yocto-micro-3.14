@@ -98,8 +98,8 @@ static const struct iio_chan_spec max78m6610_lmu_channels[] = {
 		.indexed = 1,
 		.channel = 0,
 		.extend_name = "inst",
-		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |
-				IIO_CHAN_INFO_SCALE_SHARED_BIT,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
 		.address = INSTAN_VA,
 		.scan_index = 0,
 		.scan_type = {
@@ -114,8 +114,8 @@ static const struct iio_chan_spec max78m6610_lmu_channels[] = {
 		.indexed = 1,
 		.channel = 0,
 		.extend_name = "rms",
-		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |
-				IIO_CHAN_INFO_SCALE_SHARED_BIT,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
 		.address = IA_RMS,
 		.scan_index = 1,
 		.scan_type = {
@@ -130,8 +130,8 @@ static const struct iio_chan_spec max78m6610_lmu_channels[] = {
 		.indexed = 1,
 		.channel = 0,
 		.extend_name = "inst_act",
-		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |
-				IIO_CHAN_INFO_SCALE_SHARED_BIT,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
 		.address = INSTAN_PA,
 		.scan_index = 2,
 		.scan_type = {
@@ -146,8 +146,8 @@ static const struct iio_chan_spec max78m6610_lmu_channels[] = {
 		.indexed = 1,
 		.channel = 0,
 		.extend_name = "inst_react",
-		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |
-				IIO_CHAN_INFO_SCALE_SHARED_BIT,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
 		.address = INSTAN_PQA,
 		.scan_index = 3,
 		.scan_type = {
@@ -165,8 +165,8 @@ static const struct iio_chan_spec max78m6610_lmu_channels[] = {
 		/* IIO_CHAN_INFO_AVERAGE_RAW is not used here,
 		 * this average value is provide by HW register,
 		 */
-		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |
-				IIO_CHAN_INFO_SCALE_SHARED_BIT,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
 		.address = WATT_A,
 		.scan_index = 4,
 		.scan_type = {
@@ -181,8 +181,8 @@ static const struct iio_chan_spec max78m6610_lmu_channels[] = {
 		.indexed = 1,
 		.channel = 0,
 		.extend_name = "avg_react",
-		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |
-				IIO_CHAN_INFO_SCALE_SHARED_BIT,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
 		.address = VAR_A,
 		.scan_index = 5,
 		.scan_type = {
@@ -197,8 +197,8 @@ static const struct iio_chan_spec max78m6610_lmu_channels[] = {
 		.indexed = 1,
 		.channel = 0,
 		.extend_name = "apparent",
-		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |
-				IIO_CHAN_INFO_SCALE_SHARED_BIT,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
 		.address = VA_A,
 		.scan_index = 6,
 		.scan_type = {
@@ -213,8 +213,8 @@ static const struct iio_chan_spec max78m6610_lmu_channels[] = {
 		.indexed = 1,
 		.channel = 0,
 		.extend_name = "factor",
-		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |
-				IIO_CHAN_INFO_SCALE_SHARED_BIT,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
 		.address = PFA,
 		.scan_index = 7,
 		.scan_type = {
@@ -229,8 +229,8 @@ static const struct iio_chan_spec max78m6610_lmu_channels[] = {
 		.indexed = 1,
 		.channel = 0,
 		.extend_name = "rms",
-		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |
-				IIO_CHAN_INFO_SCALE_SHARED_BIT,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
 		.address = VA_RMS,
 		.scan_index = 8,
 		.scan_type = {
@@ -247,8 +247,8 @@ static const struct iio_chan_spec max78m6610_lmu_channels[] = {
 		.indexed = 1,
 		.channel = 1,
 		.extend_name = "inst",
-		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |
-				IIO_CHAN_INFO_SCALE_SHARED_BIT,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
 		.address = INSTAN_VB,
 		.scan_index = 9,
 		.scan_type = {
@@ -263,8 +263,8 @@ static const struct iio_chan_spec max78m6610_lmu_channels[] = {
 		.indexed = 1,
 		.channel = 1,
 		.extend_name = "rms",
-		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |
-				IIO_CHAN_INFO_SCALE_SHARED_BIT,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
 		.address = IB_RMS,
 		.scan_index = 10,
 		.scan_type = {
@@ -279,8 +279,8 @@ static const struct iio_chan_spec max78m6610_lmu_channels[] = {
 		.indexed = 1,
 		.channel = 1,
 		.extend_name = "inst_act",
-		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |
-				IIO_CHAN_INFO_SCALE_SHARED_BIT,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
 		.address = INSTAN_PB,
 		.scan_index = 11,
 		.scan_type = {
@@ -295,8 +295,8 @@ static const struct iio_chan_spec max78m6610_lmu_channels[] = {
 		.indexed = 1,
 		.channel = 1,
 		.extend_name = "inst_react",
-		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |
-				IIO_CHAN_INFO_SCALE_SHARED_BIT,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
 		.address = INSTAN_PQB,
 		.scan_index = 12,
 		.scan_type = {
@@ -311,8 +311,8 @@ static const struct iio_chan_spec max78m6610_lmu_channels[] = {
 		.indexed = 1,
 		.channel = 1,
 		.extend_name = "avg_act",
-		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |
-				IIO_CHAN_INFO_SCALE_SHARED_BIT,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
 		.address = WATT_B,
 		.scan_index = 13,
 		.scan_type = {
@@ -327,8 +327,8 @@ static const struct iio_chan_spec max78m6610_lmu_channels[] = {
 		.indexed = 1,
 		.channel = 1,
 		.extend_name = "avg_react",
-		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |
-				IIO_CHAN_INFO_SCALE_SHARED_BIT,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
 		.address = VAR_B,
 		.scan_index = 14,
 		.scan_type = {
@@ -343,8 +343,8 @@ static const struct iio_chan_spec max78m6610_lmu_channels[] = {
 		.indexed = 1,
 		.channel = 1,
 		.extend_name = "apparent",
-		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |
-				IIO_CHAN_INFO_SCALE_SHARED_BIT,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
 		.address = VA_B,
 		.scan_index = 15,
 		.scan_type = {
@@ -359,8 +359,8 @@ static const struct iio_chan_spec max78m6610_lmu_channels[] = {
 		.indexed = 1,
 		.channel = 1,
 		.extend_name = "factor",
-		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |
-				IIO_CHAN_INFO_SCALE_SHARED_BIT,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
 		.address = PFB,
 		.scan_index = 16,
 		.scan_type = {
@@ -375,8 +375,8 @@ static const struct iio_chan_spec max78m6610_lmu_channels[] = {
 		.indexed = 1,
 		.channel = 1,
 		.extend_name = "rms",
-		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |
-				IIO_CHAN_INFO_SCALE_SHARED_BIT,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
 		.address = VB_RMS,
 		.scan_index = 17,
 		.scan_type = {
@@ -391,8 +391,8 @@ static const struct iio_chan_spec max78m6610_lmu_channels[] = {
 		.indexed = 1,
 		.channel = 0,
 		.extend_name = "inst",
-		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |
-				IIO_CHAN_INFO_SCALE_SHARED_BIT,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
 		.address = INSTAN_IA,
 		.scan_index = 18,
 		.scan_type = {
@@ -407,8 +407,8 @@ static const struct iio_chan_spec max78m6610_lmu_channels[] = {
 		.indexed = 1,
 		.channel = 1,
 		.extend_name = "inst",
-		.info_mask = IIO_CHAN_INFO_RAW_SEPARATE_BIT |
-				IIO_CHAN_INFO_SCALE_SHARED_BIT,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),
+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE),
 		.address = INSTAN_IB,
 		.scan_index = 19,
 		.scan_type = {

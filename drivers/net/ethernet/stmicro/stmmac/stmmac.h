@@ -118,7 +118,6 @@ struct stmmac_priv {
 	int pcs;
 	unsigned int mode;
 	int extend_desc;
-	struct ptp_clock *ptp_clock;
 	struct ptp_clock_info ptp_clock_ops;
 	unsigned int default_addend;
 	u32 adv_ts;

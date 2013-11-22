@@ -1697,6 +1697,25 @@ static int stmmac_hw_setup(struct net_device *dev)
 }
 
 /**
+ *  stmmac_hw_set_rx_ipc
+ *  @priv : pointer to the private device structure.
+ *  Enables RX IPC offload if the feature is supported in hardware
+ */
+static int stmmac_hw_set_rx_ipc(struct stmmac_priv *priv, bool on)
+{
+	int ret = 0;
+
+	/* Enable the IPC (Checksum Offload) and check if the feature has been
+	 * enabled during the core configuration. */
+	ret = priv->hw->mac->set_rx_ipc(priv->ioaddr, on);
+	if (on == true && !ret) {
+		pr_warning(" RX IPC Checksum Offload not configured.\n");
+		priv->plat->rx_coe = STMMAC_RX_COE_NONE;
+	}
+	return ret;
+}
+
+/**
  *  stmmac_open - open entry point of the driver
  *  @dev : pointer to the device structure.
  *  Description:
@@ -2828,7 +2847,7 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
 	ndev->features |= NETIF_F_HW_VLAN_CTAG_RX;
 #endif
 #ifdef STMMAC_VLAN_HASH
-	ndev->features |= NETIF_F_HW_VLAN_FILTER;
+	ndev->features |= NETIF_F_HW_VLAN_CTAG_FILTER;
 	ndev->vlan_features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
 			    NETIF_F_RXCSUM;
 #endif
