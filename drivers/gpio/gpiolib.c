@@ -2014,7 +2014,7 @@ int gpio_set_drive(unsigned gpio, unsigned mode)
 	gpio -= chip->base;
 	if (gpio >= chip->ngpio)
 		goto fail;
-	status = gpio_ensure_requested(desc, gpio);
+	status = gpio_ensure_requested(desc);
 	if (status < 0)
 		goto fail;
 
