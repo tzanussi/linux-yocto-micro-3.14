@@ -661,15 +661,16 @@ static void stmmac_ptp_init_timestamp(struct stmmac_priv *priv)
  * support. If ptp support has already been loaded it simply calls the
  * cyclecounter init routine and exits.
  */
-void stmmac_ptp_init(struct net_device *ndev, struct device * pdev)
+//void stmmac_ptp_init(struct net_device *ndev, struct device * pdev)
+int stmmac_ptp_register(struct stmmac_priv *priv)
 {
-	struct stmmac_priv *priv = netdev_priv(ndev);
+//	struct stmmac_priv *priv = netdev_priv(ndev);
 
 	/* Ensure the timestamp interrupt is masked */
 	writel(GMAC_INT_MASK_TSIM, priv->ioaddr + GMAC_INT_MASK);
 
 	/* Fill out PTP callback contents */
-	snprintf(priv->ptp_caps.name, 16, "%pm", ndev->dev_addr);
+//	snprintf(priv->ptp_caps.name, 16, "%pm", ndev->dev_addr);
 	priv->ptp_caps.owner = THIS_MODULE;
 	priv->ptp_caps.max_adj = 0;	/* Cannot be adjusted */
 	priv->ptp_caps.n_alarm = 0;
@@ -689,7 +690,7 @@ void stmmac_ptp_init(struct net_device *ndev, struct device * pdev)
 	/* Init to default state */
 //	priv->hwts = STMMAC_PTP_OVERFLOW_CHECK_ENABLED;
 
-	priv->ptp_clock = ptp_clock_register(&priv->ptp_caps, pdev);
+	priv->ptp_clock = ptp_clock_register(&priv->ptp_caps, priv->device);
 
 	if (IS_ERR(priv->ptp_clock)) {
 		priv->ptp_clock = NULL;
@@ -707,7 +708,8 @@ void stmmac_ptp_init(struct net_device *ndev, struct device * pdev)
  *
  * this function stops the ptp support, and cancels the delayed work.
  */
-void stmmac_ptp_remove(struct stmmac_priv *priv)
+//void stmmac_ptp_remove(struct stmmac_priv *priv)
+void stmmac_ptp_unregister(struct stmmac_priv *priv)
 {
 	/* Ensure the timestamp interrupt is masked */
 	writel(GMAC_INT_MASK_TSIM, priv->ioaddr + GMAC_INT_MASK);
