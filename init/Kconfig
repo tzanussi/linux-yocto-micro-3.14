@@ -22,6 +22,7 @@ config CONSTRUCTORS
 
 config IRQ_WORK
 	bool
+	default y
 
 config BUILDTIME_EXTABLE_SORT
 	bool
