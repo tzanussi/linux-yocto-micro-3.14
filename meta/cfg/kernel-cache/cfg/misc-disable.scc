@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Disable support for various features"
+define KFEATURE_COMPATIBILITY arch
+
+kconf non-hardware misc-disable.cfg
