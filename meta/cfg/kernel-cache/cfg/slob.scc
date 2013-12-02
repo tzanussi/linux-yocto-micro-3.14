@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Enable SLOB memory allocator"
+define KFEATURE_COMPATIBILITY all
+
+kconf hardware slob.cfg
