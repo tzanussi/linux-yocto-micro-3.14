@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Disable MTD support"
+define KFEATURE_COMPATIBILITY arch
+
+kconf non-hardware mtd-disable.cfg
