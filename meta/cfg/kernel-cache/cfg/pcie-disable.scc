@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Disable PCIE support"
+define KFEATURE_COMPATIBILITY arch
+
+kconf non-hardware pcie-disable.cfg
