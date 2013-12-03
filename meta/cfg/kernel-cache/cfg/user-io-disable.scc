@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Disable User I/O (iopl and ioperm)"
+define KFEATURE_COMPATIBILITY arch
+
+kconf non-hardware user-io-disable.cfg
