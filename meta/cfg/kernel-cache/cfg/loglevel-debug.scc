@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Turn loglevel up to '11'"
+define KFEATURE_COMPATIBILITY arch
+
+kconf non-hardware loglevel-debug.cfg
