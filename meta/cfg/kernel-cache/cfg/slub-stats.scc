@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Enable SLUB stats"
+define KFEATURE_COMPATIBILITY all
+
+kconf hardware slub-stats.cfg
