@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Enable sysfs for GPIO access from userspace"
+define KFEATURE_COMPATIBILITY all
+
+kconf hardware gpio-user.cfg
