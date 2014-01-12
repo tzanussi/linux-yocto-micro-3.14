@@ -1015,7 +1015,7 @@ static struct inet_protosw inetsw_array[] =
 		.no_check =   UDP_CSUM_DEFAULT,
 		.flags =      INET_PROTOSW_PERMANENT,
        },
-
+#ifdef CONFIG_IP_PING
        {
 		.type =       SOCK_DGRAM,
 		.protocol =   IPPROTO_ICMP,
@@ -1024,6 +1024,7 @@ static struct inet_protosw inetsw_array[] =
 		.no_check =   UDP_CSUM_DEFAULT,
 		.flags =      INET_PROTOSW_REUSE,
        },
+#endif
 
        {
 	       .type =       SOCK_RAW,
@@ -1719,7 +1720,9 @@ static int __init inet_init(void)
 	if (rc)
 		goto out_unregister_udp_proto;
 
+#ifdef CONFIG_IP_PING
 	rc = proto_register(&ping_prot, 1);
+#endif
 	if (rc)
 		goto out_unregister_raw_proto;
 
@@ -1836,15 +1839,11 @@ static int __init ipv4_proc_init(void)
 		goto out_tcp;
 	if (udp4_proc_init())
 		goto out_udp;
-	if (ping_proc_init())
-		goto out_ping;
 	if (ip_misc_proc_init())
 		goto out_misc;
 out:
 	return rc;
 out_misc:
-	ping_proc_exit();
-out_ping:
 	udp4_proc_exit();
 out_udp:
 	tcp4_proc_exit();
