@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Enable MIB network statistics collection"
+define KFEATURE_COMPATIBILITY all
+
+kconf non-hardware mib-stats.cfg
