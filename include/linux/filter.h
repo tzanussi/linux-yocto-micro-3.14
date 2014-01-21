@@ -55,7 +55,7 @@ extern int sk_get_filter(struct sock *sk, struct sock_filter __user *filter, uns
 extern void sk_decode_filter(struct sock_filter *filt, struct sock_filter *to);
 #else
 static inline int
-sk_filter(struct sock *sk, struct sk_buff *skb) { return -EINVAL; }
+sk_filter(struct sock *sk, struct sk_buff *skb) { return 0; }
 static inline unsigned int sk_run_filter(const struct sk_buff *skb,
 				  const struct sock_filter *filter)
 {
@@ -70,7 +70,7 @@ static inline int sk_attach_filter(struct sock_fprog *fprog, struct sock *sk)
 { return -EINVAL; }
 static inline int sk_detach_filter(struct sock *sk) { return -EINVAL; }
 static inline int sk_chk_filter(struct sock_filter *filter, unsigned int flen)
-{ return 0; }
+{ return -EINVAL; }
 static inline int sk_get_filter(struct sock *sk, struct sock_filter __user *filter, unsigned len)
 { return -EINVAL; }
 static inline void
