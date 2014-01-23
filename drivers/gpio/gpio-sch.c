@@ -41,6 +41,13 @@ static DEFINE_SPINLOCK(gpio_lock);
 
 static unsigned short gpio_ba;
 
+static void cln_gpio_restrict_release(struct device *dev) {}
+static struct platform_device cln_gpio_restrict_pdev = 
+{
+	.name	= "cln-gpio-restrict-nc",
+	.dev.release = cln_gpio_restrict_release,
+};
+
 static int sch_gpio_core_direction_in(struct gpio_chip *gc, unsigned  gpio_num)
 {
 	u8 curr_dirs;
@@ -269,6 +276,10 @@ static int sch_gpio_probe(struct platform_device *pdev)
 	if (err < 0)
 		goto err_sch_gpio_resume;
 
+	err = platform_device_register(&cln_gpio_restrict_pdev);
+	if (err < 0)
+		goto err_sch_gpio_resume;
+
 	return 0;
 
 err_sch_gpio_resume:
@@ -287,6 +298,8 @@ static int sch_gpio_remove(struct platform_device *pdev)
 	struct resource *res;
 	if (gpio_ba) {
 		int err;
+
+		platform_device_unregister(&cln_gpio_restrict_pdev);
 
 		err  = gpiochip_remove(&sch_gpio_core);
 		if (err)

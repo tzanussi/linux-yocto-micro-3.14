@@ -225,6 +225,44 @@ config LPC_ICH
 	  other drivers to control these functions, currently GPIO and
 	  watchdog.
 
+config CY8C9540A
+	tristate "Cypress CY8C9540 GPIO/PWM expander"
+	depends on INTEL_CLN_GIP
+	depends on PWM
+	help
+	  I/O expander providing GPIO/PWM functionality.
+	  This is Clanton-specific for now.
+
+config INTEL_CLN_GIP
+	tristate "Intel Clanton GIP"
+	depends on PCI && X86 && INTEL_QUARK_X1000_SOC
+	depends on I2C
+	select GENERIC_IRQ_CHIP
+	help
+	  GIP driver for Clanton SoC.
+	  Clanton GIP is a single PCI function exporting a GPIO and an I2C
+	  controller, namely Synopsys DesignWare GPIO and Synopsys DesignWare
+	  I2C.  The GPIO interface exports a total amount of 8 interrupt-capable
+	  GPIOs.
+
+config INTEL_CLN_GIP_TEST
+	tristate "Intel Clanton GIP support for Integration Testing"
+	depends on INTEL_CLN_GIP
+	depends on INTEL_QUARK_X1000_SOC_FPGAEMU || INTEL_QUARK_X1000_SOC_SVP
+	select I2C_CHARDEV
+	select GPIO_SYSFS
+	select SPI
+	select SPI_BITBANG
+	select SPI_GPIO
+	select SPI_MASTER
+	select SPI_SPIDEV
+	help
+	  Clanton GIP automated Integration Testing package.
+	  It selects kernel components needed for GPIO and I2C tests as per
+	  Integration Test Specification, and it also adds a kernel-space
+	  facility for testing the GPIO.
+	  Note this module is also used to test the Clanton Legacy GPIO.
+
 config LPC_SCH
 	tristate "Intel SCH LPC"
 	depends on PCI

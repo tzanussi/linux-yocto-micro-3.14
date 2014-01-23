@@ -897,6 +897,7 @@ static int __init save_runtime_map(void)
 	efi_memory_desc_t *md;
 	void *tmp, *p, *q = NULL;
 	int count = 0;
+	bool bgrt_map;
 
 	for (p = memmap.map; p < memmap.map_end; p += memmap.desc_size) {
 		md = p;

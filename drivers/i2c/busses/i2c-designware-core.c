@@ -169,6 +169,29 @@ static char *abort_sources[] = {
 		"lost arbitration",
 };
 
+/*
+ * Bitmask for struct i2c_dw_data_cmd's `cmd' field.
+ * - DW_IC_CMD_READ:  read/~write operation
+ * - DW_IC_CMD_STOP:  stop condition generation (only for devices requiring
+ *   explicit transaction termination)
+ * - DW_IC_CMD_RESTART:  (re)start condition generation (only for devices
+ *   requiring explicit transaction termination)
+ */
+#define DW_IC_CMD_READ			0x01
+#define DW_IC_CMD_STOP			0x02
+#define DW_IC_CMD_RESTART		0x04
+
+/*
+ * Define the IC_DATA_CMD format.
+ */
+static union i2c_dw_data_cmd {
+	struct fields {
+		u8 data;
+		u8 cmd;
+	} fields;
+	u16 value;
+} data_cmd;
+
 u32 dw_readl(struct dw_i2c_dev *dev, int offset)
 {
 	u32 value;
@@ -390,6 +413,9 @@ static void i2c_dw_xfer_init(struct dw_i2c_dev *dev)
 {
 	struct i2c_msg *msgs = dev->msgs;
 	u32 ic_con, ic_tar = 0;
+
+	/* Disable interrupts */
+	i2c_dw_disable_int(dev);
 
 	/* Disable the adapter */
 	__i2c_dw_enable(dev, false);
@@ -728,8 +754,6 @@ static u32 i2c_dw_read_clear_intrbits(struct dw_i2c_dev *dev)
 		dw_readl(dev, DW_IC_CLR_RX_DONE);
 	if (stat & DW_IC_INTR_ACTIVITY)
 		dw_readl(dev, DW_IC_CLR_ACTIVITY);
-	if (stat & DW_IC_INTR_STOP_DET)
-		dw_readl(dev, DW_IC_CLR_STOP_DET);
 	if (stat & DW_IC_INTR_START_DET)
 		dw_readl(dev, DW_IC_CLR_START_DET);
 	if (stat & DW_IC_INTR_GEN_CALL)
@@ -780,8 +804,21 @@ irqreturn_t i2c_dw_isr(int this_irq, void *dev_id)
 	 * the current transmit status.
 	 */
 
+	/*
+	 * Process stop condition after the last transaction segment is
+	 * transmitted (and received if appropriate).
+	 */
+	if (dev->msgs_num == dev->msg_write_idx
+		&& (DW_IC_INTR_STOP_DET & dw_readl(dev, DW_IC_INTR_STAT))
+		&& 0 == dw_readl(dev, DW_IC_TXFLR)
+		&& 0 == dw_readl(dev, DW_IC_RXFLR)
+		&& 0 == dev->rx_outstanding) {
+			dw_readl(dev, DW_IC_CLR_STOP_DET);
+			complete(&dev->cmd_complete);
+	}
+
 tx_aborted:
-	if ((stat & (DW_IC_INTR_TX_ABRT | DW_IC_INTR_STOP_DET)) || dev->msg_err)
+	if ((stat & (DW_IC_INTR_TX_ABRT)) || dev->msg_err)
 		complete(&dev->cmd_complete);
 
 	return IRQ_HANDLED;

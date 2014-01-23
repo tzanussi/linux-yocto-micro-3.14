@@ -151,6 +151,11 @@ config MTD_MTDRAM
 	  provide storage.  You probably want to say 'N' unless you're
 	  testing stuff.
 
+config MTD_MTD_CLN_ROM
+	bool "Simple R/O drive for SPI flash in Clanton x86 legacy block"
+	help
+	  Driver to enable reading directly from legacy block SPI /sketch part
+
 config MTDRAM_TOTAL_SIZE
 	int "MTDRAM device size in KiB"
 	depends on MTD_MTDRAM

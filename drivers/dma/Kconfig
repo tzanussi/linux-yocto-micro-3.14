@@ -34,17 +34,45 @@ if DMADEVICES
 comment "DMA Devices"
 
 config INTEL_MID_DMAC
-	tristate "Intel MID DMA support for Peripheral DMA controllers"
-	depends on PCI && X86
-	select DMA_ENGINE
+	tristate "Intel DMAC Moorsetown/Medfield/Clanton DMA controllers"
+	depends on X86
 	default n
 	help
-	  Enable support for the Intel(R) MID DMA engine present
-	  in Intel MID chipsets.
+	  Enable support for the Intel(R) MID/Clanton DMA engine present
+	  in Intel MID chipsets and Clanton SOC devices
 
 	  Say Y here if you have such a chipset.
 
 	  If unsure, say N.
+
+if INTEL_MID_DMAC
+
+config INTEL_MID_PCI
+	tristate "Intel MID DMA support for Peripheral DMA controllers"
+	depends on X86 && PCI
+	select DMA_ENGINE
+	default n
+	help
+	  Enable support for the Intel(R) MID DMA engine present
+	  in Intel MID chipsets
+
+	  Say Y here if you have such a chipset.
+
+	  If unsure, say N.
+
+config INTEL_CLN_DMAC
+	tristate "Intel CLN DMA support for Peripheral DMA controllers"
+	depends on PCI && X86 && INTEL_QUARK_X1000_SOC
+	default n
+	help
+	  Enable support for the Intel(R) Clanton DMA engine present
+	  in Intel Clanton DMA enabled UART. This is not a generic DMA
+	  driver, instead this enables DMAC regs for Clanton's UART alone
+
+	  Say Y here if you have a Clanton processor.
+
+	  If unsure, say N.
+endif
 
 config ASYNC_TX_ENABLE_CHANNEL_SWITCH
 	bool

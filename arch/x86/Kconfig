@@ -440,6 +440,14 @@ config X86_INTEL_CE
 	  This option compiles in support for the CE4100 SOC for settop
 	  boxes and media devices.
 
+config INTEL_QUARK_X1000_SOC
+	bool "Intel Quark X1000 SOC support"
+	depends on M586TSC
+	select ARCH_REQUIRE_GPIOLIB
+	---help---
+	  Quark X1000 SOC support . This option enables probing for various
+	  PCI-IDs of several on-chip devices provided by the X1000
+
 config X86_INTEL_MID
 	bool "Intel MID platform support"
 	depends on X86_32
@@ -519,6 +527,13 @@ config X86_SUPPORTS_MEMORY_FAILURE
 	depends on X86_64 || !SPARSEMEM
 	select ARCH_SUPPORTS_MEMORY_FAILURE
 
+menu "Intel Media SOC Gen3 support"
+
+config ARCH_GEN3
+	bool "Enable Intel Media SOC Gen3 support"
+	default y
+
+endmenu
 config X86_VISWS
 	bool "SGI 320/540 (Visual Workstation)"
 	depends on X86_32 && PCI && X86_MPPARSE && PCI_GODIRECT
@@ -1584,6 +1599,13 @@ config EFI_STUB
 	  by EFI firmware without the use of a bootloader.
 
 	  See Documentation/efi-stub.txt for more information.
+
+config EFI_CAPSULE
+       bool "EFI capsule update support"
+       depends on EFI
+       ---help---
+          This kernel feature allows for loading of EFI capsule code
+	  with callbacks into the EDK firmware to execute update
 
 config SECCOMP
 	def_bool y

@@ -34,6 +34,14 @@
 #define DW_IC_CON_RESTART_EN		0x20
 #define DW_IC_CON_SLAVE_DISABLE		0x40
 
+struct dw_pci_controller {
+	u32 bus_num;
+	u32 bus_cfg;
+	u32 tx_fifo_depth;
+	u32 rx_fifo_depth;
+	u32 clk_khz;
+	u8  explicit_stop;
+};
 
 /**
  * struct dw_i2c_dev - private i2c-designware data

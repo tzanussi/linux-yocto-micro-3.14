@@ -17,16 +17,13 @@ config BMA180
 	  To compile this driver as a module, choose M here: the
 	  module will be called bma180.
 
-config HID_SENSOR_ACCEL_3D
-	depends on HID_SENSOR_HUB
-	select IIO_BUFFER
-	select IIO_TRIGGERED_BUFFER
-	select HID_SENSOR_IIO_COMMON
-	select HID_SENSOR_IIO_TRIGGER
-	tristate "HID Accelerometers 3D"
-	help
-	  Say yes here to build support for the HID SENSOR
-	  accelerometers 3D.
+config IIO_LIS331DLH_INTEL_CLN
+        tristate "STMicroelectronics LIS331DLH accelerometer i2c driver for Intel Clanton platform"
+        depends on INTEL_QUARK_X1000_SOC
+	depends on I2C && SYSFS
+	select IIO_ST_SENSORS_CORE
+        help
+          Selects the LIS331DLH accelerometer driver for the Intel Clanton Hill platform
 
 config IIO_ST_ACCEL_3AXIS
 	tristate "STMicroelectronics accelerometers 3-Axis Driver"

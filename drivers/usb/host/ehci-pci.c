@@ -50,6 +50,10 @@ static int ehci_pci_reinit(struct ehci_hcd *ehci, struct pci_dev *pdev)
 	if (!retval)
 		ehci_dbg(ehci, "MWI active\n");
 
+	/* Reset the threshold limit */
+	if(unlikely(usb_is_intel_cln(pdev)))
+		usb_set_cln_bulk_thresh(pdev);
+
 	return 0;
 }
 

@@ -50,6 +50,9 @@ MODULE_ALIAS("platform:pxa2xx-spi");
 
 #define TIMOUT_DFLT		1000
 
+#define CE5X00_FIFO_DEPTH    32
+#define CE4X00_FIFO_DEPTH    4
+
 /*
  * for testing SSCR1 changes that require SSP restart, basically
  * everything except the service and interrupt enables, the pxa270 developer
@@ -194,9 +197,11 @@ static void cs_deassert(struct driver_data *drv_data)
 {
 	struct chip_data *chip = drv_data->cur_chip;
 
-	if (drv_data->ssp_type == CE4100_SSP)
+	if (drv_data->ssp_type == CE4100_SSP ||
+	    (drv_data->ssp_type == CE5X00_SSP
+	     && (!gpio_is_valid(chip->gpio_cs)))) {
 		return;
-
+	}
 	if (chip->cs_control) {
 		chip->cs_control(PXA2XX_CS_DEASSERT);
 		return;
@@ -217,25 +222,46 @@ int pxa2xx_spi_flush(struct driver_data *drv_data)
 	void __iomem *reg = drv_data->ioaddr;
 
 	do {
-		while (read_SSSR(reg) & SSSR_RNE) {
-			read_SSDR(reg);
-		}
-	} while ((read_SSSR(reg) & SSSR_BSY) && --limit);
-	write_SSSR_CS(drv_data, SSSR_ROR);
+		while (read_sssr(reg) & SSSR_RNE)
+			read_ssdr(reg);
+	} while ((read_sssr(reg) & SSSR_BSY) && --limit);
+	write_sssr_cs(drv_data, SSSR_ROR);
 
 	return limit;
 }
+
+#ifdef CONFIG_GEN3_SPI
+static void wait_till_not_busy(struct driver_data *drv_data)
+{
+	/*
+	 * Most cases, the BSY bit will be cleared in very short time.
+	 * But if the controller is set to the slowest speed, the BSY
+	 * bit waitting time will increase a lot.
+	 * Here, we set the wait time to 100ms is to deal with such corner case,
+	 * but in real world, there is almost no one will use the slowest
+	 * speed to transfer data, which means there is no need to add more
+	 * complex code to to deal with the slowest speed case.
+	 */
+	unsigned long end = jiffies + 1 + usecs_to_jiffies(100000);
+	void __iomem *reg = drv_data->ioaddr;
+	while (time_before(jiffies, end)) {
+		if (!(read_sssr(reg) & SSSR_BSY))
+			return;
+	}
+	pr_err("SPI MASTER keeps busy for 100ms after a read/write!\n");
+}
+#endif
 
 static int null_writer(struct driver_data *drv_data)
 {
 	void __iomem *reg = drv_data->ioaddr;
 	u8 n_bytes = drv_data->n_bytes;
 
-	if (((read_SSSR(reg) & SSSR_TFL_MASK) == SSSR_TFL_MASK)
-		|| (drv_data->tx == drv_data->tx_end))
+	if ((!(read_sssr(reg) & SSSR_TNF))
+	    || (drv_data->tx == drv_data->tx_end))
 		return 0;
 
-	write_SSDR(0, reg);
+	write_ssdr(0, reg);
 	drv_data->tx += n_bytes;
 
 	return 1;
@@ -246,9 +272,9 @@ static int null_reader(struct driver_data *drv_data)
 	void __iomem *reg = drv_data->ioaddr;
 	u8 n_bytes = drv_data->n_bytes;
 
-	while ((read_SSSR(reg) & SSSR_RNE)
+	while ((read_sssr(reg) & SSSR_RNE)
 		&& (drv_data->rx < drv_data->rx_end)) {
-		read_SSDR(reg);
+		read_ssdr(reg);
 		drv_data->rx += n_bytes;
 	}
 
@@ -259,11 +285,11 @@ static int u8_writer(struct driver_data *drv_data)
 {
 	void __iomem *reg = drv_data->ioaddr;
 
-	if (((read_SSSR(reg) & SSSR_TFL_MASK) == SSSR_TFL_MASK)
-		|| (drv_data->tx == drv_data->tx_end))
+	if ((!(read_sssr(reg) & SSSR_TNF))
+	    || (drv_data->tx == drv_data->tx_end))
 		return 0;
 
-	write_SSDR(*(u8 *)(drv_data->tx), reg);
+	write_ssdr(*(u8 *)(drv_data->tx), reg);
 	++drv_data->tx;
 
 	return 1;
@@ -273,9 +299,9 @@ static int u8_reader(struct driver_data *drv_data)
 {
 	void __iomem *reg = drv_data->ioaddr;
 
-	while ((read_SSSR(reg) & SSSR_RNE)
-		&& (drv_data->rx < drv_data->rx_end)) {
-		*(u8 *)(drv_data->rx) = read_SSDR(reg);
+	while ((read_sssr(reg) & SSSR_RNE)
+	       && (drv_data->rx < drv_data->rx_end)) {
+		*(u8 *)(drv_data->rx) = read_ssdr(reg);
 		++drv_data->rx;
 	}
 
@@ -286,11 +312,11 @@ static int u16_writer(struct driver_data *drv_data)
 {
 	void __iomem *reg = drv_data->ioaddr;
 
-	if (((read_SSSR(reg) & SSSR_TFL_MASK) == SSSR_TFL_MASK)
-		|| (drv_data->tx == drv_data->tx_end))
+	if ((!(read_sssr(reg) & SSSR_TNF))
+	    || (drv_data->tx == drv_data->tx_end))
 		return 0;
 
-	write_SSDR(*(u16 *)(drv_data->tx), reg);
+	write_ssdr(*(u16 *)(drv_data->tx), reg);
 	drv_data->tx += 2;
 
 	return 1;
@@ -300,9 +326,9 @@ static int u16_reader(struct driver_data *drv_data)
 {
 	void __iomem *reg = drv_data->ioaddr;
 
-	while ((read_SSSR(reg) & SSSR_RNE)
-		&& (drv_data->rx < drv_data->rx_end)) {
-		*(u16 *)(drv_data->rx) = read_SSDR(reg);
+	while ((read_sssr(reg) & SSSR_RNE)
+	       && (drv_data->rx < drv_data->rx_end)) {
+		*(u16 *)(drv_data->rx) = read_ssdr(reg);
 		drv_data->rx += 2;
 	}
 
@@ -313,11 +339,11 @@ static int u32_writer(struct driver_data *drv_data)
 {
 	void __iomem *reg = drv_data->ioaddr;
 
-	if (((read_SSSR(reg) & SSSR_TFL_MASK) == SSSR_TFL_MASK)
-		|| (drv_data->tx == drv_data->tx_end))
+	if ((!(read_sssr(reg) & SSSR_TNF))
+	    || (drv_data->tx == drv_data->tx_end))
 		return 0;
 
-	write_SSDR(*(u32 *)(drv_data->tx), reg);
+	write_ssdr(*(u32 *)(drv_data->tx), reg);
 	drv_data->tx += 4;
 
 	return 1;
@@ -327,9 +353,9 @@ static int u32_reader(struct driver_data *drv_data)
 {
 	void __iomem *reg = drv_data->ioaddr;
 
-	while ((read_SSSR(reg) & SSSR_RNE)
-		&& (drv_data->rx < drv_data->rx_end)) {
-		*(u32 *)(drv_data->rx) = read_SSDR(reg);
+	while ((read_sssr(reg) & SSSR_RNE)
+	       && (drv_data->rx < drv_data->rx_end)) {
+		*(u32 *)(drv_data->rx) = read_ssdr(reg);
 		drv_data->rx += 4;
 	}
 
@@ -439,10 +465,10 @@ static void int_transfer_complete(struct driver_data *drv_data)
 	void __iomem *reg = drv_data->ioaddr;
 
 	/* Stop SSP */
-	write_SSSR_CS(drv_data, drv_data->clear_sr);
+	write_sssr_cs(drv_data, drv_data->clear_sr);
 	reset_sccr1(drv_data);
 	if (!pxa25x_ssp_comp(drv_data))
-		write_SSTO(0, reg);
+		write_ssto(0, reg);
 
 	/* Update total byte transferred return count actual bytes read */
 	drv_data->cur_msg->actual_length += drv_data->len -
@@ -459,14 +485,16 @@ static void int_transfer_complete(struct driver_data *drv_data)
 	tasklet_schedule(&drv_data->pump_transfers);
 }
 
+#ifndef CONFIG_GEN3_SPI
+
 static irqreturn_t interrupt_transfer(struct driver_data *drv_data)
 {
 	void __iomem *reg = drv_data->ioaddr;
 
-	u32 irq_mask = (read_SSCR1(reg) & SSCR1_TIE) ?
+	u32 irq_mask = (read_sscr1(reg) & SSCR1_TIE) ?
 			drv_data->mask_sr : drv_data->mask_sr & ~SSSR_TFS;
 
-	u32 irq_status = read_SSSR(reg) & irq_mask;
+	u32 irq_status = read_sssr(reg) & irq_mask;
 
 	if (irq_status & SSSR_ROR) {
 		int_error_stop(drv_data, "interrupt_transfer: fifo overrun");
@@ -474,7 +502,7 @@ static irqreturn_t interrupt_transfer(struct driver_data *drv_data)
 	}
 
 	if (irq_status & SSSR_TINT) {
-		write_SSSR(SSSR_TINT, reg);
+		write_sssr_cs(drv_data, SSSR_TINT);
 		if (drv_data->read(drv_data)) {
 			int_transfer_complete(drv_data);
 			return IRQ_HANDLED;
@@ -495,10 +523,12 @@ static irqreturn_t interrupt_transfer(struct driver_data *drv_data)
 	}
 
 	if (drv_data->tx == drv_data->tx_end) {
-		u32 bytes_left;
+#ifndef CONFIG_GEN3_SPI
+		u32 bytes_left = 0;
+#endif
 		u32 sccr1_reg;
 
-		sccr1_reg = read_SSCR1(reg);
+		sccr1_reg = read_sscr1(reg);
 		sccr1_reg &= ~SSCR1_TIE;
 
 		/*
@@ -506,13 +536,13 @@ static irqreturn_t interrupt_transfer(struct driver_data *drv_data)
 		 * remaining RX bytes.
 		 */
 		if (pxa25x_ssp_comp(drv_data)) {
-
+#ifndef CONFIG_GEN3_SPI
 			sccr1_reg &= ~SSCR1_RFT;
 
 			bytes_left = drv_data->rx_end - drv_data->rx;
 			switch (drv_data->n_bytes) {
 			case 4:
-				bytes_left >>= 1;
+				bytes_left >>= 2;
 			case 2:
 				bytes_left >>= 1;
 			}
@@ -536,6 +566,7 @@ static irqreturn_t ssp_int(int irq, void *dev_id)
 	u32 sccr1_reg;
 	u32 mask = drv_data->mask_sr;
 	u32 status;
+	irqreturn_t ret;
 
 	/*
 	 * The IRQ might be shared with other peripherals so we must first
@@ -565,22 +596,28 @@ static irqreturn_t ssp_int(int irq, void *dev_id)
 	if (!(status & mask))
 		return IRQ_NONE;
 
+#ifdef CONFIG_INTEL_QUARK_X1000_SOC
+	mask_pvm(drv_data->ssp->pcidev);
+#endif
 	if (!drv_data->cur_msg) {
 
-		write_SSCR0(read_SSCR0(reg) & ~SSCR0_SSE, reg);
-		write_SSCR1(read_SSCR1(reg) & ~drv_data->int_cr1, reg);
+		write_sscr0(read_sscr0(reg) & ~SSCR0_SSE, reg);
+		write_sscr1(read_sscr1(reg) & ~drv_data->int_cr1, reg);
 		if (!pxa25x_ssp_comp(drv_data))
-			write_SSTO(0, reg);
-		write_SSSR_CS(drv_data, drv_data->clear_sr);
-
+			write_ssto(0, reg);
+		write_sssr_cs(drv_data, drv_data->clear_sr);
+ 
 		dev_err(&drv_data->pdev->dev,
 			"bad message state in interrupt handler\n");
-
 		/* Never fail */
 		return IRQ_HANDLED;
 	}
 
-	return drv_data->transfer_handler(drv_data);
+	ret = drv_data->transfer_handler(drv_data);
+#ifdef CONFIG_INTEL_QUARK_X1000_SOC
+	unmask_pvm(drv_data->ssp->pcidev);
+#endif
+	return ret;
 }
 
 static unsigned int ssp_get_clk_div(struct driver_data *drv_data, int rate)
@@ -615,8 +652,11 @@ static void pump_transfers(unsigned long data)
 	/* Get current state information */
 	message = drv_data->cur_msg;
 	transfer = drv_data->cur_transfer;
+
 	chip = drv_data->cur_chip;
 
+	if (transfer->bits_per_word)
+		chip->n_bytes = (transfer->bits_per_word + 7)/8;
 	/* Handle for abort */
 	if (message->state == ERROR_STATE) {
 		message->status = -EIO;
@@ -729,11 +769,26 @@ static void pump_transfers(unsigned long data)
 						     "pump_transfers: DMA burst size reduced to match bits_per_word\n");
 		}
 
-		cr0 = clk_div
-			| SSCR0_Motorola
-			| SSCR0_DataSize(bits > 16 ? bits - 16 : bits)
-			| SSCR0_SSE
-			| (bits > 16 ? SSCR0_EDSS : 0);
+		switch (drv_data->ssp_type) {
+		case CE5X00_SSP:
+			chip->cr0 = clk_div
+				| CE5X00_SSCR0_Motorola
+				| CE5X00_SSCR0_DataSize(bits > 32 ?
+							8 : bits)
+				| SSCR0_SSE;
+			break;
+		case CE4100_SSP:
+		case PXA25x_SSP:
+		default:
+			chip->cr0 = clk_div
+				| SSCR0_Motorola
+				| SSCR0_DataSize(bits > 16 ?
+						 bits - 16 : bits)
+				| SSCR0_SSE
+				| (bits > 16 ? SSCR0_EDSS : 0);
+		}
+		
+		cr0 = chip->cr0;
 	}
 
 	message->state = RUNNING_STATE;
@@ -850,8 +905,9 @@ static int setup_cs(struct spi_device *spi, struct chip_data *chip,
 	if (gpio_is_valid(chip_info->gpio_cs)) {
 		err = gpio_request(chip_info->gpio_cs, "SPI_CS");
 		if (err) {
-			dev_err(&spi->dev, "failed to request chip select GPIO%d\n",
-				chip_info->gpio_cs);
+			dev_err(&spi->dev,
+				"failed to request chip select "
+				"GPIO%d\n", chip_info->gpio_cs);
 			return err;
 		}
 
@@ -863,6 +919,31 @@ static int setup_cs(struct spi_device *spi, struct chip_data *chip,
 	}
 
 	return err;
+}
+
+static int prepare_transfer_hardware(struct spi_master *master)
+{
+	struct driver_data *drv_data = spi_master_get_devdata(master);
+
+	/*
+	 * Just make sure we have all we need to run the transfer by syncing
+	 * with the runtime PM framework.
+	 */
+	pm_runtime_get_sync(&drv_data->pdev->dev);
+	return 0;
+}
+
+static int unprepare_transfer_hardware(struct spi_master *master)
+{
+	struct driver_data *drv_data = spi_master_get_devdata(master);
+
+	/* nothing more to do - disable spi/ssp and power off */
+	write_sscr0(0, drv_data->ioaddr);
+	clk_disable(drv_data->ssp->clk);
+
+	pm_runtime_put(&drv_data->pdev->dev);
+
+	return 0;
 }
 
 static int setup(struct spi_device *spi)
@@ -896,7 +977,8 @@ static int setup(struct spi_device *spi)
 		if (drv_data->ssp_type == CE4100_SSP) {
 			if (spi->chip_select > 4) {
 				dev_err(&spi->dev,
-					"failed setup: cs number must not be > 4.\n");
+					"failed setup: "
+					"cs number must not be > 4.\n");
 				kfree(chip);
 				return -EINVAL;
 			}
@@ -904,6 +986,7 @@ static int setup(struct spi_device *spi)
 			chip->frm = spi->chip_select;
 		} else
 			chip->gpio_cs = -1;
+
 		chip->enable_dma = 0;
 		chip->timeout = TIMOUT_DFLT;
 	}
@@ -914,6 +997,7 @@ static int setup(struct spi_device *spi)
 
 	/* chip_info isn't always needed */
 	chip->cr1 = 0;
+	chip->cr0 = 0;
 	if (chip_info) {
 		if (chip_info->timeout)
 			chip->timeout = chip_info->timeout;
@@ -994,7 +1078,9 @@ static int setup(struct spi_device *spi)
 		chip->read = u16_reader;
 		chip->write = u16_writer;
 	} else if (spi->bits_per_word <= 32) {
+#ifndef CONFIG_GEN3_SPI
 		chip->cr0 |= SSCR0_EDSS;
+#endif
 		chip->n_bytes = 4;
 		chip->read = u32_reader;
 		chip->write = u32_writer;
@@ -1257,6 +1343,9 @@ static int pxa2xx_spi_remove(struct platform_device *pdev)
 	/* Release SSP */
 	pxa_ssp_free(ssp);
 
+	/* Disable transfer pump */
+	tasklet_disable(&drv_data->pump_transfers);
+
 	return 0;
 }
 
@@ -1264,7 +1353,8 @@ static void pxa2xx_spi_shutdown(struct platform_device *pdev)
 {
 	int status = 0;
 
-	if ((status = pxa2xx_spi_remove(pdev)) != 0)
+	status = pxa2xx_spi_remove(pdev);
+	if (status != 0)
 		dev_err(&pdev->dev, "shutdown failed with %d\n", status);
 }
 

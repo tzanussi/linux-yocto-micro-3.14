@@ -31,6 +31,7 @@
 #include <linux/ethtool.h>
 #include <asm/io.h>
 #include "dwmac1000.h"
+#include "stmmac.h"
 
 static void dwmac1000_core_init(void __iomem *ioaddr, int mtu)
 {
@@ -44,7 +45,7 @@ static void dwmac1000_core_init(void __iomem *ioaddr, int mtu)
 	writel(value, ioaddr + GMAC_CONTROL);
 
 	/* Mask GMAC interrupts */
-	writel(0x207, ioaddr + GMAC_INT_MASK);
+	writel(GMAC_INT_MASK_DEFAULT, ioaddr + GMAC_INT_MASK);
 
 #ifdef STMMAC_VLAN_TAG_USED
 	/* Tag detection without filtering */
@@ -52,11 +53,15 @@ static void dwmac1000_core_init(void __iomem *ioaddr, int mtu)
 #endif
 }
 
-static int dwmac1000_rx_ipc_enable(void __iomem *ioaddr)
+static int dwmac1000_set_rx_ipc(void __iomem *ioaddr, bool on)
 {
 	u32 value = readl(ioaddr + GMAC_CONTROL);
 
-	value |= GMAC_CONTROL_IPC;
+	if(on == true){
+		value |= GMAC_CONTROL_IPC;
+	}else{
+		value &= ~GMAC_CONTROL_IPC;
+	}
 	writel(value, ioaddr + GMAC_CONTROL);
 
 	value = readl(ioaddr + GMAC_CONTROL);
@@ -155,6 +160,10 @@ static void dwmac1000_set_filter(struct net_device *dev, int id)
 	/* Enable Receive all mode (to debug filtering_fail errors) */
 	value |= GMAC_FRAME_FILTER_RA;
 #endif
+	if (priv->active_vlans != 0){
+		/* VLAN hash filtering is active on this interface */
+		value |= GMAC_FRAME_FILTER_VTFE;
+	}
 	writel(value, ioaddr + GMAC_FRAME_FILTER);
 
 	pr_debug("\tFilter: 0x%08x\n\tHash: HI 0x%08x, LO 0x%08x\n",
@@ -353,9 +362,10 @@ static void dwmac1000_get_adv(void __iomem *ioaddr, struct rgmii_adv *adv)
 	adv->lp_pause = (value & GMAC_ANE_PSE) >> GMAC_ANE_PSE_SHIFT;
 }
 
+
 static const struct stmmac_ops dwmac1000_ops = {
 	.core_init = dwmac1000_core_init,
-	.rx_ipc = dwmac1000_rx_ipc_enable,
+	.set_rx_ipc = dwmac1000_set_rx_ipc,
 	.dump_regs = dwmac1000_dump_regs,
 	.host_irq_status = dwmac1000_irq_status,
 	.set_filter = dwmac1000_set_filter,

@@ -7,6 +7,47 @@
 #include <linux/of_device.h>
 #include <linux/module.h>
 #include <linux/spi/pxa2xx_spi.h>
+#include <linux/irq.h>
+#include <linux/platform_data/clanton.h>
+
+/* defined here to avoid including arch/x86/pci/intel_media_proc_gen3.c */
+#define CE3100_SOC_DEVICE_ID 0x2E50
+#define CE4100_SOC_DEVICE_ID 0x0708
+#define CE4200_SOC_DEVICE_ID 0x0709
+#define CE5300_SOC_DEVICE_ID 0x0C40
+#define CE2600_SOC_DEVICE_ID 0x0931
+
+#ifdef CONFIG_INTEL_QUARK_X1000_SOC_FPGAEMU
+#define CE4200_NUM_SPI_MASTER 1
+#else
+#define CE4200_NUM_SPI_MASTER 2
+#endif
+
+#define CE4X00_SPI_MAX_SPEED  1843200
+
+#ifdef CONFIG_INTEL_QUARK_X1000_SOC
+#define CE4200_NUM_CHIPSELECT 2
+#ifdef CONFIG_INTEL_QUARK_X1000_SOC_FPGAEMU
+#define CE5X00_SPI_MAX_SPEED  3500000
+#else
+#define CE5X00_SPI_MAX_SPEED  50000000
+#endif
+#else
+#define CE4200_NUM_CHIPSELECT 4
+#define CE5X00_SPI_MAX_SPEED  5000000
+#endif
+
+#define SPI_CE_DEBUG
+
+static int interface;
+
+#ifdef CONFIG_INTEL_QUARK_X1000_SOC
+static int enable_msi = 1;
+#else
+static int enable_msi;
+#endif
+module_param(enable_msi, int, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC(enable_msi, "Enable PCI MSI mode");
 
 static int ce4100_spi_probe(struct pci_dev *dev,
 		const struct pci_device_id *ent)

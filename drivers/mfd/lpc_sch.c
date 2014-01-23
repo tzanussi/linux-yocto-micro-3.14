@@ -80,6 +80,7 @@ static const struct pci_device_id lpc_sch_ids[] = {
 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SCH_LPC) },
 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ITC_LPC) },
 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CENTERTON_ILB) },
+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CLANTON_ILB) },
 	{ 0, }
 };
 MODULE_DEVICE_TABLE(pci, lpc_sch_ids);
@@ -123,6 +124,31 @@ static int lpc_sch_probe(struct pci_dev *dev,
 			gpio_sch_resource.end = base_addr + GPIO_IO_SIZE_CENTERTON - 1;
 		else
 			gpio_sch_resource.end = base_addr + GPIO_IO_SIZE - 1;
+	}
+
+	/* Add RCBA SPI device */
+	if (id->device == PCI_DEVICE_ID_INTEL_CLANTON_ILB) {
+		pci_read_config_dword(dev, LPC_BIOS_CNTL, &bios_cntl);
+		pr_info("%s BIOS_CNTL 0x%08x\n", __func__, bios_cntl);
+
+		/* Enable flash write */
+		bios_cntl |= LPC_BIOS_CNTL_WE;
+		pci_write_config_dword(dev, LPC_BIOS_CNTL, bios_cntl);
+
+		/* Verify */
+		pci_read_config_dword(dev, LPC_BIOS_CNTL, &bios_cntl);
+		pr_info("%s new BIOS_CNTL 0x%08x\n", __func__, bios_cntl);
+	}
+
+	pci_read_config_dword(dev, RCBA_BASE, &rcba_base);
+	rcba_base &= 0xFFFFC000;
+	spi_res.start = rcba_base + 0x3020;
+	spi_res.end = rcba_base + 0x3088;
+	pr_info("%s RCBA @ 0x%08x\n", __func__, rcba_base);
+	ret = platform_device_register(&lpc_sch_spi);
+	if (ret < 0){
+		pr_err("unable to register %s plat dev\n", lpc_sch_spi.name);
+		goto out_dev;
 	}
 
 	if (id->device == PCI_DEVICE_ID_INTEL_ITC_LPC

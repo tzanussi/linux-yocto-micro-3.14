@@ -30,9 +30,9 @@
 #include <linux/module.h>
 
 #include "dmaengine.h"
+#include "intel_mid_dma_regs.h"
 
 #define MAX_CHAN	4 /*max ch across controllers*/
-#include "intel_mid_dma_regs.h"
 
 #define INTEL_MID_DMAC1_ID		0x0814
 #define INTEL_MID_DMAC2_ID		0x0813
@@ -43,6 +43,14 @@
 #define LNW_PERIPHRAL_STATUS		0x0
 #define LNW_PERIPHRAL_MASK		0x8
 
+/**
+ * struct intel_mid_dma_probe_info
+ *
+ * @max_chan: maximum channels to probe
+ * @ch_base: offset from register base
+ * @block_size: TBD
+ * @pimr_mask: indicates if mask registers to be mapped
+ */
 struct intel_mid_dma_probe_info {
 	u8 max_chan;
 	u8 ch_base;
@@ -1015,7 +1023,7 @@ static void dma_tasklet2(unsigned long data)
  * See if this is our interrupt if so then schedule the tasklet
  * otherwise ignore
  */
-static irqreturn_t intel_mid_dma_interrupt(int irq, void *data)
+irqreturn_t intel_mid_dma_interrupt(int irq, void *data)
 {
 	struct middma_device *mid = data;
 	u32 tfr_status, err_status;
@@ -1048,6 +1056,7 @@ static irqreturn_t intel_mid_dma_interrupt(int irq, void *data)
 
 	return IRQ_HANDLED;
 }
+EXPORT_SYMBOL(intel_mid_dma_interrupt);
 
 static irqreturn_t intel_mid_dma_interrupt1(int irq, void *data)
 {

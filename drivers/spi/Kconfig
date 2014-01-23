@@ -35,6 +35,14 @@ config SPI_DEBUG
 	  Say "yes" to enable debug messaging (like dev_dbg and pr_debug),
 	  sysfs, and debugfs support in SPI controller and protocol drivers.
 
+config GEN3_SPI
+        bool "Intel Media SOC SPI support"
+        depends on SPI && ARCH_GEN3 && INTEL_QUARK_X1000_SOC
+        default y
+        help
+          This option enables Intel Media SOC SPI support.
+          For Clanton this option depends on INTEL_QUARK_X1000_SOC.
+
 #
 # MASTER side ... talking to discrete SPI slave chips including microcontrollers
 #
@@ -85,7 +93,15 @@ config SPI_BCM2835
 	  is for the regular SPI controller. Slave mode operation is not also
 	  not supported.
 
-config SPI_BFIN5XX
+config SPI_CE5XX_SPI_FLASH
+        tristate "CE5XX SPI FLASH"
+        depends on ARCH_GEN3 && HW_MUTEXES
+        default y
+        help
+          This selects a driver for CE5XX Serial Flash controler
+
+
+config SPI_BFIN
 	tristate "SPI controller driver for ADI Blackfin5xx"
 	depends on BLACKFIN && !BF60x
 	help
@@ -547,6 +563,14 @@ config SPI_DW_MID_DMA
 config SPI_DW_MMIO
 	tristate "Memory-mapped io interface driver for DW SPI core"
 	depends on SPI_DESIGNWARE && HAVE_CLK
+
+#
+# Bring out the LPC_SCH SPI block
+#
+
+config SPI_LPC_SCH
+	tristate "LPC SCH Legacy SPI controller"
+	depends on LPC_SCH
 
 #
 # There are lots of SPI device types, with sensors and memory

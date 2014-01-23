@@ -24,29 +24,185 @@
 *******************************************************************************/
 
 #include <linux/pci.h>
+#include <linux/platform_data/clanton.h>
 #include "stmmac.h"
 
-static struct plat_stmmacenet_data plat_dat;
-static struct stmmac_mdio_bus_data mdio_data;
-static struct stmmac_dma_cfg dma_cfg;
+/* List of supported PCI device IDs */
+#define STMMAC_VENDOR_ID 0x700
+#define STMMAC_DEVICE_ID 0x1108
+#define STMMAC_CLANTON_ID 0x0937
+#define MAX_INTERFACES	 0x02
 
-static void stmmac_default_data(void)
+#if defined (CONFIG_INTEL_QUARK_X1000_SOC)
+static int enable_msi = 1;
+#else
+static int enable_msi = 0;
+#endif
+module_param(enable_msi, int, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC(enable_msi, "Enable PCI MSI mode");
+
+static int bus_id = 1;
+static char stmmac_mac_data[MAX_INTERFACES][ETH_ALEN];
+
+struct stmmac_cln_mac_data {
+	int phy_addr;
+	int bus_id;
+	cln_plat_id_t plat_id;
+};
+
+static struct stmmac_cln_mac_data phy_data [] = {
+	{
+		.phy_addr	= -1,			/* not connected */
+		.bus_id		= 1,
+		.plat_id	= CLANTON_EMULATION,
+	},
+	{
+		.phy_addr 	= 1,
+		.bus_id		= 2,
+		.plat_id	= CLANTON_EMULATION,
+	},
+	{
+		.phy_addr	= 3,
+		.bus_id		= 1,
+		.plat_id 	= CLANTON_PEAK,
+	},
+	{
+		.phy_addr 	= 1,
+		.bus_id		= 2,
+		.plat_id 	= CLANTON_PEAK,
+	},
+	{
+		.phy_addr	= 1,
+		.bus_id		= 1,
+		.plat_id 	= KIPS_BAY,
+	},
+	{
+		.phy_addr 	= -1,			/* not connected */
+		.bus_id		= 2,
+		.plat_id 	= KIPS_BAY,
+	},
+	{
+		.phy_addr	= 1,
+		.bus_id		= 1,
+		.plat_id 	= CROSS_HILL,
+	},
+	{
+		.phy_addr 	= 1,
+		.bus_id		= 2,
+		.plat_id 	= CROSS_HILL,
+	},
+	{
+		.phy_addr	= 1,
+		.bus_id		= 1,
+		.plat_id 	= CLANTON_HILL,
+	},
+	{
+		.phy_addr 	= 1,
+		.bus_id		= 2,
+		.plat_id 	= CLANTON_HILL,
+	},
+	{
+		.phy_addr	= 1,
+		.bus_id		= 1,
+		.plat_id 	= IZMIR,
+	},
+	{
+		.phy_addr 	= -1,			/* not connected */
+		.bus_id		= 2,
+		.plat_id 	= IZMIR,
+	},
+};
+
+static int stmmac_find_phy_addr(int mdio_bus_id, cln_plat_id_t cln_plat_id)
 {
-	memset(&plat_dat, 0, sizeof(struct plat_stmmacenet_data));
-	plat_dat.bus_id = 1;
-	plat_dat.phy_addr = 0;
-	plat_dat.interface = PHY_INTERFACE_MODE_GMII;
-	plat_dat.clk_csr = 2;	/* clk_csr_i = 20-35MHz & MDC = clk_csr_i/16 */
-	plat_dat.has_gmac = 1;
-	plat_dat.force_sf_dma_mode = 1;
+	int i = 0;
 
-	mdio_data.phy_reset = NULL;
-	mdio_data.phy_mask = 0;
-	plat_dat.mdio_bus_data = &mdio_data;
+	for (; i < sizeof(phy_data)/sizeof(struct stmmac_cln_mac_data); i++){
+		if ( phy_data[i].plat_id == cln_plat_id &&
+			phy_data[i].bus_id == mdio_bus_id)
+			return phy_data[i].phy_addr;
+	}
 
-	dma_cfg.pbl = 32;
-	dma_cfg.burst_len = DMA_AXI_BLEN_256;
-	plat_dat.dma_cfg = &dma_cfg;
+	return -1;
+}
+
+static int stmmac_default_data(struct plat_stmmacenet_data *plat_dat,
+			       int mdio_bus_id, const struct pci_device_id *id)
+{
+	int phy_addr = 0;
+	memset(plat_dat, 0, sizeof(struct plat_stmmacenet_data));
+
+	plat_dat->mdio_bus_data = kzalloc(sizeof(struct stmmac_mdio_bus_data),
+					GFP_KERNEL);
+	if (plat_dat->mdio_bus_data == NULL)
+		return -ENOMEM;
+
+	plat_dat->dma_cfg = kzalloc(sizeof(struct stmmac_dma_cfg),GFP_KERNEL);
+	if (plat_dat->dma_cfg == NULL)
+		return -ENOMEM;
+
+	if (id->device ==  STMMAC_CLANTON_ID) {
+
+		phy_addr = stmmac_find_phy_addr(mdio_bus_id,
+						intel_cln_plat_get_id());
+		if (phy_addr == -1)
+			return -ENODEV;
+
+		plat_dat->bus_id = mdio_bus_id;
+		plat_dat->phy_addr = phy_addr;
+		plat_dat->interface = PHY_INTERFACE_MODE_RMII;
+		/* clk_csr_i = 20-35MHz & MDC = clk_csr_i/16 */
+		plat_dat->clk_csr = 2;
+		plat_dat->has_gmac = 1;
+		plat_dat->force_sf_dma_mode = 1;
+
+		plat_dat->mdio_bus_data->phy_reset = NULL;
+		plat_dat->mdio_bus_data->phy_mask = 0;
+
+		plat_dat->dma_cfg->pbl = 16;
+		plat_dat->dma_cfg->fixed_burst = 1;
+		plat_dat->dma_cfg->burst_len = DMA_AXI_BLEN_256;
+
+	} else {
+
+		plat_dat->bus_id = mdio_bus_id;
+		plat_dat->phy_addr = phy_addr;
+		plat_dat->interface = PHY_INTERFACE_MODE_GMII;
+		/* clk_csr_i = 20-35MHz & MDC = clk_csr_i/16 */
+		plat_dat->clk_csr = 2;
+		plat_dat->has_gmac = 1;
+		plat_dat->force_sf_dma_mode = 1;
+
+		plat_dat->mdio_bus_data->phy_reset = NULL;
+		plat_dat->mdio_bus_data->phy_mask = 0;
+
+		plat_dat->dma_cfg->pbl = 32;
+		plat_dat->dma_cfg->burst_len = DMA_AXI_BLEN_256;
+
+	}
+
+	return 0;
+}
+
+/**
+ * stmmac_pci_find_mac
+ *
+ * @prive: pointer to private stmmac structure
+ * @mdio_bus_id : MDIO bus identifier used to find the platform MAC id
+ *
+ * Attempt to find MAC in platform data. If not found then driver will generate
+ * a random one for itself in any case
+ */
+void stmmac_pci_find_mac (struct stmmac_priv * priv, unsigned int mdio_bus_id)
+{
+	unsigned int id = mdio_bus_id - 1;
+	if (priv == NULL || id >= MAX_INTERFACES)
+		return;
+
+	if (intel_cln_plat_get_mac(PLAT_DATA_MAC0+id,
+		(char*)&stmmac_mac_data[id]) == 0){
+		memcpy(priv->dev->dev_addr, &stmmac_mac_data[id], ETH_ALEN);
+	}
 }
 
 /**
@@ -67,7 +223,20 @@ static int stmmac_pci_probe(struct pci_dev *pdev,
 	int ret = 0;
 	void __iomem *addr = NULL;
 	struct stmmac_priv *priv = NULL;
+	struct plat_stmmacenet_data *plat_dat = NULL;
 	int i;
+
+        plat_dat = kmalloc(sizeof(struct plat_stmmacenet_data), GFP_KERNEL);
+        if (plat_dat == NULL){
+                ret = -ENOMEM;
+                goto err_out_map_failed;
+        }
+
+	/* return -ENODEV for non existing PHY, stop probing here  */
+        ret = stmmac_default_data(plat_dat, bus_id, id);
+        if (ret != 0)
+                goto err_platdata;
+
 
 	/* Enable pci device */
 	ret = pci_enable_device(pdev);
@@ -138,6 +307,20 @@ static void stmmac_pci_remove(struct pci_dev *pdev)
 
 	stmmac_dvr_remove(ndev);
 
+	if(enable_msi == 1) {
+		if(pci_dev_msi_enabled(pdev)) {
+			pci_disable_msi(pdev);
+		}
+	}
+
+	if (priv->plat != NULL) {
+		if (priv->plat->dma_cfg != NULL)
+			kfree (priv->plat->dma_cfg);
+		if (priv->plat->mdio_bus_data != NULL)
+			kfree (priv->plat->mdio_bus_data);
+		kfree(priv->plat);
+	}
+
 	pci_iounmap(pdev, priv->ioaddr);
 	pci_release_regions(pdev);
 	pci_disable_device(pdev);
@@ -167,12 +350,10 @@ static int stmmac_pci_resume(struct pci_dev *pdev)
 }
 #endif
 
-#define STMMAC_VENDOR_ID 0x700
-#define STMMAC_DEVICE_ID 0x1108
-
 static DEFINE_PCI_DEVICE_TABLE(stmmac_id_table) = {
 	{PCI_DEVICE(STMMAC_VENDOR_ID, STMMAC_DEVICE_ID)},
 	{PCI_DEVICE(PCI_VENDOR_ID_STMICRO, PCI_DEVICE_ID_STMICRO_MAC)},
+	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, STMMAC_CLANTON_ID)},
 	{}
 };
 

@@ -31,9 +31,15 @@
 #include <linux/module.h>
 #if defined(CONFIG_VLAN_8021Q) || defined(CONFIG_VLAN_8021Q_MODULE)
 #define STMMAC_VLAN_TAG_USED
+#if defined(CONFIG_INTEL_QUARK_X1000_SOC)
+#define STMMAC_VLAN_HASH
+#endif
 #include <linux/if_vlan.h>
 #endif
 
+#if defined(STMMAC_VLAN_HASH) || defined(CONFIG_STMMAC_PTP)
+#define STMMAC_ATDS_USED
+#endif
 #include "descs.h"
 #include "mmc.h"
 
@@ -390,6 +396,9 @@ struct stmmac_ops {
 			       unsigned int reg_n);
 	void (*get_umac_addr) (void __iomem *ioaddr, unsigned char *addr,
 			       unsigned int reg_n);
+	/* Enable/Disable VLAN Hash filters */
+	int (*vlan_rx_add_vid)(struct stmmac_priv *priv, unsigned short vid);
+	int (*vlan_rx_kill_vid)(struct stmmac_priv *priv, unsigned short vid);
 	void (*set_eee_mode) (void __iomem *ioaddr);
 	void (*reset_eee_mode) (void __iomem *ioaddr);
 	void (*set_eee_timer) (void __iomem *ioaddr, int ls, int tw);

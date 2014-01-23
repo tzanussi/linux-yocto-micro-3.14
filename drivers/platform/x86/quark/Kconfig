@@ -1,0 +1,75 @@
+config INTEL_CLN_ESRAM
+	bool "eSRAM - embedded SRAM driver for Intel Clanton platform"
+	depends on INTEL_QUARK_X1000_SOC && PM
+	select KALLSYMS
+	select CRC16
+	help
+	  Say Y here to enable eSRAM overlay and software-initiated ECC
+	  updates. eSRAM overlaying allows for code/data structures to be
+	  mapped into eSRAM thus providing far faster access to code/data
+	  than ordinary DRAM. Slower than cache RAM faster than DRAM.
+
+config INTEL_CLN_ECC_REFRESH_PERIOD
+	int "Choose eSRAM ECC coverage period"
+	depends on INTEL_CLN_ESRAM
+	default 24
+	help
+	  Select the period over which *RAM ECC codes should be refreshed.
+	  IA Core will periodically enable disabled eSRAM pages to ensure all of
+	  disabled eSRAM pages are 'address walked' in this period. A logical
+	  component within the silicon on Clanton will ensure DRAM (and
+	  overlayed eSRAM) pages by extension are similarly updated over the
+	  same period. This variable controlls how long a time this address
+	  walking algorithm should take. For a noisy environment like a
+	  sub-station or a satellite update frequently. For less noisy
+	  environments this value should be lower. Default 24 hours is right for
+	  most people. Set to zero to disable - this is NOT recommended. Max 48
+	  hours.
+
+config INTEL_CLN_ECC_SCRUB
+	bool "Hardware ECC Scrub - /proc interface for Intel Clanton platform"
+	depends on INTEL_QUARK_X1000_SOC
+	help
+	   Say Y here to enable support for accessing the hardware memory
+	   ECC Scrubber via the /proc interface.
+
+config INTEL_CLN_ECC_SCRUB_OVERRIDE_CONFIG
+	bool "Hardware ECC Scrub - use config settings to override scrub vals"
+	depends on INTEL_CLN_ECC_SCRUB
+	help
+	  Say Y here to enable support to use config settings to override
+	  BIOS configured scrub values
+
+config INTEL_CLN_HW_ECC_REFRESH_RATE
+	int "Choose DRAM ECC refresh rate"
+	depends on INTEL_CLN_ECC_SCRUB_OVERRIDE_CONFIG
+	default 20
+	help
+	  Range 0 - 255 mSec
+
+config INTEL_CLN_HW_ECC_REFRESH_SIZE
+	int "Choose DRAM ECC refresh size"
+	depends on INTEL_CLN_ECC_SCRUB_OVERRIDE_CONFIG
+	default 512
+	help
+	  Range 64-512 bytes, multiples of 32
+
+config INTEL_CLN_ECC_SCRUB_S3_CONFIG
+	bool "Hardware ECC Scrub - linux manages S3 entry/resume for scrub"
+	depends on INTEL_CLN_ECC_SCRUB
+	help
+	  Say Y here to enable linux to manage S3 entry/resume for the
+	  hardware memory ECC Scrubber.
+
+config INTEL_CLN_THERMAL
+	bool "Thermal driver for Intel Clanton platform"
+	depends on INTEL_QUARK_X1000_SOC
+	help
+	  Say Y here to enable Clanton's Thermal driver plus the MSI's
+	  that can be hooked from the thermal sub-system
+
+config INTEL_CLN_AUDIO_CTRL
+	tristate "Audio sub-system control driver for Intel Clanton platform"
+	depends on INTEL_QUARK_X1000_SOC
+	help
+	  Say Y here to enable Clanton's audio control driver

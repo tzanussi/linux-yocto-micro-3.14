@@ -155,7 +155,7 @@ static void dwmac100_pmt(void __iomem *ioaddr, unsigned long mode)
 
 static const struct stmmac_ops dwmac100_ops = {
 	.core_init = dwmac100_core_init,
-	.rx_ipc = dwmac100_rx_ipc_enable,
+	.set_rx_ipc = dwmac100_set_rx_ipc,
 	.dump_regs = dwmac100_dump_mac_regs,
 	.host_irq_status = dwmac100_irq_status,
 	.set_filter = dwmac100_set_filter,

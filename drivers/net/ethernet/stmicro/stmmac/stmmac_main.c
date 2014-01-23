@@ -28,6 +28,9 @@
 	https://bugzilla.stlinux.com/
 *******************************************************************************/
 
+#if defined(CONFIG_INTEL_QUARK_X1000_SOC)
+#include <asm/cln.h>
+#endif
 #include <linux/clk.h>
 #include <linux/kernel.h>
 #include <linux/interrupt.h>
@@ -119,6 +122,8 @@ static irqreturn_t stmmac_interrupt(int irq, void *dev_id);
 #ifdef CONFIG_STMMAC_DEBUG_FS
 static int stmmac_init_fs(struct net_device *dev);
 static void stmmac_exit_fs(void);
+static int debugfs_registered = 0;
+
 #endif
 
 #define STMMAC_COAL_TIMER(x) (jiffies + usecs_to_jiffies(x))
@@ -775,6 +780,8 @@ static void stmmac_check_pcs_mode(struct stmmac_priv *priv)
 			priv->pcs = STMMAC_PCS_SGMII;
 		}
 	}
+
+	return 0;
 }
 
 /**
@@ -1302,6 +1309,10 @@ static void stmmac_tx_clean(struct stmmac_priv *priv)
 		}
 		priv->hw->mode->clean_desc3(priv, p);
 
+#ifdef CONFIG_STMMAC_PTP
+		stmmac_ptp_tx_hwtstamp(priv, p, skb);
+#endif
+
 		if (likely(skb != NULL)) {
 			dev_kfree_skb(skb);
 			priv->tx_skbuff[entry] = NULL;
@@ -1707,6 +1718,9 @@ static int stmmac_open(struct net_device *dev)
 			goto phy_error;
 		}
 	}
+
+	/* Enable RX IPC if supported by silicon */
+	ret = stmmac_hw_set_rx_ipc(priv, true);
 
 	/* Extra statistics */
 	memset(&priv->xstats, 0, sizeof(struct stmmac_extra_stats));
@@ -2354,6 +2368,8 @@ static irqreturn_t stmmac_interrupt(int irq, void *dev_id)
 	/* To handle DMA interrupts */
 	stmmac_dma_interrupt(priv);
 
+	unmask_pvm(priv->pdev);
+
 	return IRQ_HANDLED;
 }
 
@@ -2591,6 +2607,21 @@ static void stmmac_exit_fs(void)
 }
 #endif /* CONFIG_STMMAC_DEBUG_FS */
 
+#ifdef STMMAC_VLAN_HASH
+static int stmmac_vlan_rx_add_vid(struct net_device *dev, unsigned short vid)
+{
+	struct stmmac_priv *priv = netdev_priv(dev);
+	return priv->hw->mac->vlan_rx_add_vid(priv, vid);
+}
+
+static int stmmac_vlan_rx_kill_vid(struct net_device *dev, unsigned short vid)
+{
+	struct stmmac_priv *priv = netdev_priv(dev);
+	return priv->hw->mac->vlan_rx_kill_vid(priv, vid);
+}
+
+#endif
+
 static const struct net_device_ops stmmac_netdev_ops = {
 	.ndo_open = stmmac_open,
 	.ndo_start_xmit = stmmac_xmit,
@@ -2601,6 +2632,10 @@ static const struct net_device_ops stmmac_netdev_ops = {
 	.ndo_tx_timeout = stmmac_tx_timeout,
 	.ndo_do_ioctl = stmmac_ioctl,
 	.ndo_set_config = stmmac_config,
+#ifdef STMMAC_VLAN_HASH
+	.ndo_vlan_rx_add_vid = stmmac_vlan_rx_add_vid,
+	.ndo_vlan_rx_kill_vid = stmmac_vlan_rx_kill_vid,
+#endif
 #ifdef CONFIG_NET_POLL_CONTROLLER
 	.ndo_poll_controller = stmmac_poll_controller,
 #endif
@@ -2773,6 +2808,12 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
 	/* Both mac100 and gmac support receive VLAN tag detection */
 	ndev->features |= NETIF_F_HW_VLAN_CTAG_RX;
 #endif
+#ifdef STMMAC_VLAN_HASH
+	ndev->features |= NETIF_F_HW_VLAN_FILTER;
+	ndev->vlan_features = NETIF_F_SG | NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
+			    NETIF_F_RXCSUM;
+#endif
+
 	priv->msg_enable = netif_msg_init(debug, default_msg_level);
 
 	if (flow_ctrl)
@@ -2847,7 +2888,7 @@ int stmmac_dvr_remove(struct net_device *ndev)
 {
 	struct stmmac_priv *priv = netdev_priv(ndev);
 
-	pr_info("%s:\n\tremoving driver", __func__);
+	pr_info("%s:\n\tremoving driver\n", __func__);
 
 	priv->hw->dma->stop_rx(priv->ioaddr);
 	priv->hw->dma->stop_tx(priv->ioaddr);
@@ -2857,6 +2898,10 @@ int stmmac_dvr_remove(struct net_device *ndev)
 	    priv->pcs != STMMAC_PCS_RTBI)
 		stmmac_mdio_unregister(ndev);
 	netif_carrier_off(ndev);
+
+#ifdef CONFIG_STMMAC_PTP
+	stmmac_ptp_remove(priv);
+#endif
 	unregister_netdev(ndev);
 	if (priv->stmmac_rst)
 		reset_control_assert(priv->stmmac_rst);

@@ -114,6 +114,15 @@ static unsigned n_ports = 1;
 module_param(n_ports, uint, 0);
 MODULE_PARM_DESC(n_ports, "number of ports to create, default=1");
 
+static __u16 vendor = GS_VENDOR_ID;
+module_param(vendor, ushort, 0);
+MODULE_PARM_DESC(vendor, "User specified vendor ID (default="
+		__MODULE_STRING(GS_VENDOR_ID)")");
+
+static __u16 product = 0;
+module_param(product, ushort, 0);
+MODULE_PARM_DESC(product, "User specified product ID");
+
 /*-------------------------------------------------------------------------*/
 
 static struct usb_configuration serial_config_driver = {
@@ -190,6 +199,14 @@ static int __init gs_bind(struct usb_composite_dev *cdev)
 	status = strings_dev[STRING_DESCRIPTION_IDX].id;
 	serial_config_driver.iConfiguration = status;
 
+	/* Allow command line over-ride to set specific vendor/device id */
+	if (vendor != GS_VENDOR_ID)
+		device_desc.idVendor = cpu_to_le16(vendor);
+	if (product != 0)
+		device_desc.idProduct = cpu_to_le16(product);
+	pr_info("g_serial: Vendor 0x%04x Product 0x%04x\n",
+		device_desc.idVendor, device_desc.idProduct);
+
 	if (gadget_is_otg(cdev->gadget)) {
 		serial_config_driver.descriptors = otg_desc;
 		serial_config_driver.bmAttributes |= USB_CONFIG_ATT_WAKEUP;
@@ -239,6 +256,7 @@ static __refdata struct usb_composite_driver gserial_driver = {
 	.unbind		= gs_unbind,
 };
 
+static int bCfgVal;
 static int __init init(void)
 {
 	/* We *could* export two configs; that'd be much cleaner...
@@ -246,19 +264,19 @@ static int __init init(void)
 	 */
 	if (use_acm) {
 		serial_config_driver.label = "CDC ACM config";
-		serial_config_driver.bConfigurationValue = 2;
+		serial_config_driver.bConfigurationValue = ++bCfgVal;
 		device_desc.bDeviceClass = USB_CLASS_COMM;
 		device_desc.idProduct =
 				cpu_to_le16(GS_CDC_PRODUCT_ID);
 	} else if (use_obex) {
 		serial_config_driver.label = "CDC OBEX config";
-		serial_config_driver.bConfigurationValue = 3;
+		serial_config_driver.bConfigurationValue = ++bCfgVal;
 		device_desc.bDeviceClass = USB_CLASS_COMM;
 		device_desc.idProduct =
 			cpu_to_le16(GS_CDC_OBEX_PRODUCT_ID);
 	} else {
 		serial_config_driver.label = "Generic Serial config";
-		serial_config_driver.bConfigurationValue = 1;
+		serial_config_driver.bConfigurationValue = ++bCfgVal;
 		device_desc.bDeviceClass = USB_CLASS_VENDOR_SPEC;
 		device_desc.idProduct =
 				cpu_to_le16(GS_PRODUCT_ID);
