@@ -1245,24 +1245,19 @@ static void pump_transfers(unsigned long data)
 		case  CE5X00_SSP:
 			chip->cr0 = clk_div
 				| CE5X00_SSCR0_Motorola
-				| CE5X00_SSCR0_DataSize(spi->bits_per_word > 32 ?
-							8 : spi->bits_per_word)
+				| CE5X00_SSCR0_DataSize(bits > 32 ?
+							8 : bits)
 				| SSCR0_SSE;
-			chip->threshold = (CE5X00_SSCR1_RxTresh(rx_thres)
-					   & CE5X00_SSCR1_RFT) |
-				(CE5X00_SSCR1_TxTresh(tx_thres) & CE5X00_SSCR1_TFT);
 			break;
 		case  CE4100_SSP:
 		case  PXA25x_SSP:
 		default:
 			chip->cr0 = clk_div
 				| SSCR0_Motorola
-				| SSCR0_DataSize(spi->bits_per_word > 16 ?
-						 spi->bits_per_word - 16 : spi->bits_per_word)
+				| SSCR0_DataSize(bits > 16 ?
+						 bits - 16 : bits)
 				| SSCR0_SSE
-				| (spi->bits_per_word > 16 ? SSCR0_EDSS : 0);
-			chip->threshold = (SSCR1_RxTresh(rx_thres) & SSCR1_RFT) |
-				(SSCR1_TxTresh(tx_thres) & SSCR1_TFT);
+				| (bits > 16 ? SSCR0_EDSS : 0);
 		}
 		
 		cr0 = chip->cr0;
@@ -1559,12 +1554,30 @@ static int setup(struct spi_device *spi)
 	clk_div = ssp_get_clk_div(drv_data, spi->max_speed_hz);
 	chip->speed_hz = spi->max_speed_hz;
 
-	chip->cr0 = clk_div
+	switch (drv_data->ssp_type) {
+	case  CE5X00_SSP:
+		chip->cr0 = clk_div
+			| CE5X00_SSCR0_Motorola
+			| CE5X00_SSCR0_DataSize(spi->bits_per_word > 32 ?
+						8 : spi->bits_per_word)
+			| SSCR0_SSE;
+		chip->threshold = (CE5X00_SSCR1_RxTresh(rx_thres)
+				   & CE5X00_SSCR1_RFT) |
+			(CE5X00_SSCR1_TxTresh(tx_thres) & CE5X00_SSCR1_TFT);
+		break;
+	case  CE4100_SSP:
+	case  PXA25x_SSP:
+	default:
+		chip->cr0 = clk_div
 			| SSCR0_Motorola
 			| SSCR0_DataSize(spi->bits_per_word > 16 ?
 				spi->bits_per_word - 16 : spi->bits_per_word)
 			| SSCR0_SSE
 			| (spi->bits_per_word > 16 ? SSCR0_EDSS : 0);
+		chip->threshold = (SSCR1_RxTresh(rx_thres) & SSCR1_RFT) |
+			(SSCR1_TxTresh(tx_thres) & SSCR1_TFT);
+	}
+
 	chip->cr1 &= ~(SSCR1_SPO | SSCR1_SPH);
 #ifdef CONFIG_INTEL_QUARK_X1000_SOC
 	chip->cr1 |= (((spi->mode & SPI_CPHA) != 0) ? SSCR1_SPH : 0)
