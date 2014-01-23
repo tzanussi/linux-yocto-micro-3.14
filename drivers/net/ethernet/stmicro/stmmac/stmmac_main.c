@@ -2890,7 +2890,7 @@ struct stmmac_priv *stmmac_dvr_probe(struct device *device,
 		priv->clk_csr = priv->plat->clk_csr;
 
 #ifdef CONFIG_STMMAC_PTP
-	stmmac_ptp_init(ndev, device);
+//	stmmac_ptp_init(ndev, device);
 #endif
 	stmmac_check_pcs_mode(priv);
 
@@ -2912,7 +2912,7 @@ error_mdio_register:
 error_netdev_register:
 	netif_napi_del(&priv->napi);
 #ifdef CONFIG_STMMAC_PTP
-	stmmac_ptp_remove(priv);
+//	stmmac_ptp_remove(priv);
 #endif
 error_hw_init:
 	clk_disable_unprepare(priv->stmmac_clk);
@@ -2944,7 +2944,7 @@ int stmmac_dvr_remove(struct net_device *ndev)
 	netif_carrier_off(ndev);
 
 #ifdef CONFIG_STMMAC_PTP
-	stmmac_ptp_remove(priv);
+//	stmmac_ptp_remove(priv);
 #endif
 	unregister_netdev(ndev);
 	if (priv->stmmac_rst)

@@ -80,7 +80,6 @@ config STMMAC_DA
 config STMMAC_PTP
 	bool "STMMAC PTP (1588-2005) Clock Support"
 	default n
-	depends on EXPERIMENTAL
 	select PPS
 	select PTP_1588_CLOCK
 	---help---

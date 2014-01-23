@@ -93,6 +93,9 @@ struct driver_data {
 struct chip_data {
 	u32 cr0;
 	u32 cr1;
+#ifdef CONFIG_INTEL_QUARK_X1000_SOC
+	u32 dds_rate;
+#endif
 	u32 psp;
 	u32 timeout;
 	u8 n_bytes;
@@ -126,6 +129,9 @@ DEFINE_SSP_REG(SSCR1, 0x04)
 DEFINE_SSP_REG(SSSR, 0x08)
 DEFINE_SSP_REG(SSITR, 0x0c)
 DEFINE_SSP_REG(SSDR, 0x10)
+#ifdef CONFIG_INTEL_QUARK_X1000_SOC
+DEFINE_SSP_REG(DDS_RATE, 0x28) /* SSTO unused for clanton */
+#endif
 DEFINE_SSP_REG(SSTO, 0x28)
 DEFINE_SSP_REG(SSPSP, 0x2c)
 DEFINE_SSP_REG(SSITF, SSITF)
@@ -145,6 +151,10 @@ static inline int pxa25x_ssp_comp(struct driver_data *drv_data)
 		return 1;
 	if (drv_data->ssp_type == CE4100_SSP)
 		return 1;
+#ifdef CONFIG_GEN3_SPI
+	if (drv_data->ssp_type == CE5X00_SSP)
+		return 2;
+#endif
 	return 0;
 }
 
@@ -152,7 +162,8 @@ static inline void write_SSSR_CS(struct driver_data *drv_data, u32 val)
 {
 	void __iomem *reg = drv_data->ioaddr;
 
-	if (drv_data->ssp_type == CE4100_SSP)
+	if (drv_data->ssp_type == CE4100_SSP
+	    || drv_data->ssp_type == CE5X00_SSP)
 		val |= read_SSSR(reg) & SSSR_ALT_FRM_MASK;
 
 	write_SSSR(val, reg);

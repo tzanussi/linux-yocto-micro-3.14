@@ -34,13 +34,15 @@ int st_sensors_allocate_trigger(struct iio_dev *indio_dev,
 	err = request_threaded_irq(sdata->get_irq_data_ready(indio_dev),
 			iio_trigger_generic_data_rdy_poll,
 			NULL,
-			IRQF_TRIGGER_RISING,
+			IRQF_SHARED | /* sharing with the accelerometer events*/
+			IRQF_TRIGGER_RISING | IRQF_ONESHOT,
 			sdata->trig->name,
 			sdata->trig);
 	if (err)
 		goto request_irq_error;
 
 	iio_trigger_set_drvdata(sdata->trig, indio_dev);
+
 	sdata->trig->ops = trigger_ops;
 	sdata->trig->dev.parent = sdata->dev;
 
