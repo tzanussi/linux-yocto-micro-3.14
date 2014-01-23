@@ -39,7 +39,7 @@
 #include <linux/spi/pxa2xx_spi.h>
 #include <linux/spi/spi.h>
 #include <linux/spi/flash.h>
-#include <linux/i2c/at24.h>
+#include <linux/platform_data/at24.h>
 
 #define DRIVER_NAME 		"cln-plat-galileo"
 #define GPIO_RESTRICT_NAME 	"cln-gpio-restrict-sc"
