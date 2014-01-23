@@ -1551,7 +1551,13 @@ static int setup(struct spi_device *spi)
 		}
 	}
 
+#ifdef CONFIG_INTEL_QUARK_X1000_SOC
+	actual_speed = cln_set_clk_regvals(spi->max_speed_hz,
+					   &chip->dds_rate, &clk_div);
+	clk_div = (clk_div << 8);
+#else
 	clk_div = ssp_get_clk_div(drv_data, spi->max_speed_hz);
+#endif
 	chip->speed_hz = spi->max_speed_hz;
 
 	switch (drv_data->ssp_type) {
