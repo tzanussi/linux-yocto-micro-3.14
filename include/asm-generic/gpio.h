@@ -62,6 +62,7 @@ static inline struct gpio_chip *gpio_to_chip(unsigned gpio)
  */
 extern int gpio_request(unsigned gpio, const char *label);
 extern void gpio_free(unsigned gpio);
+extern int gpio_set_drive(unsigned gpio, unsigned mode);
 
 static inline int gpio_direction_input(unsigned gpio)
 {
