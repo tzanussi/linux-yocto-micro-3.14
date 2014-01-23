@@ -640,6 +640,8 @@ static int stmmac_hwtstamp_ioctl(struct net_device *dev, struct ifreq *ifr)
  */
 static int stmmac_init_ptp(struct stmmac_priv *priv)
 {
+	int ret = 0;
+
 	if (!(priv->dma_cap.time_stamp || priv->dma_cap.atime_stamp))
 		return -EOPNOTSUPP;
 
@@ -657,12 +659,17 @@ static int stmmac_init_ptp(struct stmmac_priv *priv)
 	priv->hwts_tx_en = 0;
 	priv->hwts_rx_en = 0;
 
-	return stmmac_ptp_register(priv);
+#ifdef CONFIG_STMMAC_PTP
+	ret = return stmmac_ptp_register(priv);
+#endif
+	return ret;
 }
 
 static void stmmac_release_ptp(struct stmmac_priv *priv)
 {
+#ifdef CONFIG_STMMAC_PTP
 	stmmac_ptp_unregister(priv);
+#endif
 }
 
 /**
