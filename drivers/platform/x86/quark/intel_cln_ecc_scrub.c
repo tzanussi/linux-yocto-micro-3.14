@@ -23,7 +23,6 @@
  * !!!!!!! Description
  *
  */
-#include <asm-generic/uaccess.h>
 #include <linux/intel_cln_sb.h>
 #include <linux/kernel.h>
 #include <linux/module.h>

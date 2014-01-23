@@ -37,7 +37,6 @@
  * The IMR can be freed with the pre-allocated memory addresses.
  */
 
-#include <asm-generic/uaccess.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/printk.h>

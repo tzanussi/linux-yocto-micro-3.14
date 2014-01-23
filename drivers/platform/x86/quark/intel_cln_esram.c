@@ -54,7 +54,6 @@
 #include <asm/io.h>
 #include <asm/pgtable.h>
 #include <asm/special_insns.h>
-#include <asm-generic/uaccess.h>
 #include <linux/delay.h>
 #include <linux/err.h>
 #include <linux/fs.h>
