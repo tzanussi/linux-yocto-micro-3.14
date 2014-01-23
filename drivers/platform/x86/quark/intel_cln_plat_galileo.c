@@ -28,7 +28,6 @@
 #include <linux/errno.h>
 #include <linux/gpio.h>
 #include <linux/i2c.h>
-#include <linux/i2c/at24.h>
 #include <linux/io.h>
 #include <linux/ioport.h>
 #include <linux/module.h>
