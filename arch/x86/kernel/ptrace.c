@@ -561,6 +561,8 @@ static int genregs_set(struct task_struct *target,
 	return ret;
 }
 
+#ifdef CONFIG_HW_BREAKPOINTS
+
 static void ptrace_triggered(struct perf_event *bp,
 			     struct perf_sample_data *data,
 			     struct pt_regs *regs)
@@ -777,6 +779,34 @@ static int ptrace_set_debugreg(struct task_struct *tsk, int n,
 	}
 	return rc;
 }
+
+#else
+
+/* Without breakpoints only handle DR6 */
+static unsigned long ptrace_get_debugreg(struct task_struct *tsk, int n)
+{
+	struct thread_struct *thread = &tsk->thread;
+
+	if (n == 6)
+		return thread->debugreg6;
+	return 0;
+}
+
+/* Without breakpoints only handle DR6 */
+static int ptrace_set_debugreg(struct task_struct *tsk, int n,
+			       unsigned long val)
+{
+	struct thread_struct *thread = &tsk->thread;
+	int rc = -EIO;
+
+	if (n == 6) {
+		thread->debugreg6 = val;
+		rc = 0;
+	}
+	return rc;
+}
+
+#endif
 
 /*
  * These access the current or another (stopped) task's io permission
