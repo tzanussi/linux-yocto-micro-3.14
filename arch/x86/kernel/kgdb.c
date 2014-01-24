@@ -192,6 +192,8 @@ void sleeping_thread_to_gdb_regs(unsigned long *gdb_regs, struct task_struct *p)
 	gdb_regs[GDB_SP]	= p->thread.sp;
 }
 
+#ifdef CONFIG_HW_BREAKPOINTS
+
 static struct hw_breakpoint {
 	unsigned		enabled;
 	unsigned long		addr;
@@ -418,6 +420,8 @@ static void kgdb_disable_hw_debug(struct pt_regs *regs)
 	}
 }
 
+#endif
+
 #ifdef CONFIG_SMP
 /**
  *	kgdb_roundup_cpus - Get other CPUs into a holding pattern
@@ -638,6 +642,8 @@ out:
 	return retval;
 }
 
+#ifdef CONFIG_HW_BREAKPOINTS
+
 static void kgdb_hw_overflow_handler(struct perf_event *event,
 		struct perf_sample_data *data, struct pt_regs *regs)
 {
@@ -688,6 +694,8 @@ void kgdb_arch_late(void)
 	}
 }
 
+#endif
+
 /**
  *	kgdb_arch_exit - Perform any architecture specific uninitalization.
  *
@@ -696,6 +704,7 @@ void kgdb_arch_late(void)
  */
 void kgdb_arch_exit(void)
 {
+#ifdef CONFIG_HW_BREAKPOINTS
 	int i;
 	for (i = 0; i < 4; i++) {
 		if (breakinfo[i].pev) {
@@ -703,6 +712,7 @@ void kgdb_arch_exit(void)
 			breakinfo[i].pev = NULL;
 		}
 	}
+#endif
 	unregister_nmi_handler(NMI_UNKNOWN, "kgdb");
 	unregister_nmi_handler(NMI_LOCAL, "kgdb");
 	unregister_die_notifier(&kgdb_notifier);
@@ -806,9 +816,11 @@ struct kgdb_arch arch_kgdb_ops = {
 	/* Breakpoint instruction: */
 	.gdb_bpt_instr		= { 0xcc },
 	.flags			= KGDB_HW_BREAKPOINT,
+#ifdef CONFIG_HW_BREAKPOINTS
 	.set_hw_breakpoint	= kgdb_set_hw_break,
 	.remove_hw_breakpoint	= kgdb_remove_hw_break,
 	.disable_hw_break	= kgdb_disable_hw_debug,
 	.remove_all_hw_break	= kgdb_remove_all_hw_break,
 	.correct_hw_break	= kgdb_correct_hw_break,
+#endif
 };
