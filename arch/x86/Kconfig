@@ -70,9 +70,6 @@ config X86
 	select HAVE_KERNEL_XZ
 	select HAVE_KERNEL_LZO
 	select HAVE_KERNEL_LZ4
-	select HAVE_HW_BREAKPOINT
-	select HAVE_MIXED_BREAKPOINTS_REGS
-	select PERF_EVENTS
 	select HAVE_PERF_EVENTS_NMI
 	select HAVE_PERF_REGS
 	select HAVE_PERF_USER_STACK_DUMP
@@ -601,6 +598,14 @@ config SCHED_OMIT_FRAME_POINTER
 	  at the expense of slightly more scheduling overhead.
 
 	  If in doubt, say "Y".
+
+config HW_BREAKPOINTS
+	bool "Enable hardware breakpoints support"
+	select HAVE_HW_BREAKPOINT
+	select HAVE_MIXED_BREAKPOINTS_REGS
+	---help---
+	  Enable support for x86 hardware breakpoints for debuggers
+	  and perf.  This will implicitly enable perf-events.
 
 menuconfig HYPERVISOR_GUEST
 	bool "Linux guest support"

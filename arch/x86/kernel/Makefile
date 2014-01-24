@@ -32,7 +32,7 @@ obj-$(CONFIG_X86_64)	+= vsyscall_emu_64.o
 obj-$(CONFIG_SYSFS)	+= ksysfs.o
 obj-y			+= bootflag.o e820.o
 obj-y			+= pci-dma.o quirks.o topology.o kdebugfs.o
-obj-y			+= alternative.o i8253.o pci-nommu.o hw_breakpoint.o
+obj-y			+= alternative.o i8253.o pci-nommu.o
 obj-y			+= tsc.o tsc_msr.o io_delay.o rtc.o
 obj-y			+= pci-iommu_table.o
 obj-y			+= resource.o
@@ -76,6 +76,7 @@ obj-$(CONFIG_DOUBLEFAULT)	+= doublefault.o
 obj-$(CONFIG_KGDB)		+= kgdb.o
 obj-$(CONFIG_VM86)		+= vm86_32.o
 obj-$(CONFIG_EARLY_PRINTK)	+= early_printk.o
+obj-$(CONFIG_HW_BREAKPOINTS) 	+= hw_breakpoint.o
 
 obj-$(CONFIG_HPET_TIMER) 	+= hpet.o
 obj-$(CONFIG_APB_TIMER)		+= apb_timer.o
