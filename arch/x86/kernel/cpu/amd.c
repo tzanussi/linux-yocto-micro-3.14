@@ -15,6 +15,8 @@
 # include <asm/cacheflush.h>
 #endif
 
+#include <asm/perf_event.h>
+
 #include "cpu.h"
 
 static inline int rdmsrl_amd_safe(unsigned msr, unsigned long long *p)
@@ -911,3 +913,28 @@ static bool cpu_has_amd_erratum(struct cpuinfo_x86 *cpu, const int *erratum)
 
 	return false;
 }
+
+
+/* IBS - apic initialization, for perf and oprofile */
+
+u32 __get_ibs_caps(void)
+{
+	u32 caps;
+	unsigned int max_level;
+
+	if (!boot_cpu_has(X86_FEATURE_IBS))
+		return 0;
+
+	/* check IBS cpuid feature flags */
+	max_level = cpuid_eax(0x80000000);
+	if (max_level < IBS_CPUID_FEATURES)
+		return IBS_CAPS_DEFAULT;
+
+	caps = cpuid_eax(IBS_CPUID_FEATURES);
+	if (!(caps & IBS_CAPS_AVAIL))
+		/* cpuid flags not valid */
+		return IBS_CAPS_DEFAULT;
+
+	return caps;
+}
+EXPORT_SYMBOL(__get_ibs_caps);

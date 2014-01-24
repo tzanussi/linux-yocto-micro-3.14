@@ -198,6 +198,8 @@ struct x86_pmu_capability {
 #define IBS_OP_MAX_CNT_EXT	0x007FFFFFULL	/* not a register bit mask */
 #define IBS_RIP_INVALID		(1ULL<<38)
 
+extern u32 __get_ibs_caps(void);
+
 #ifdef CONFIG_X86_LOCAL_APIC
 extern u32 get_ibs_caps(void);
 #else

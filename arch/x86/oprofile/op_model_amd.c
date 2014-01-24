@@ -26,6 +26,8 @@
 #include <asm/processor.h>
 #include <asm/cpufeature.h>
 
+#include <asm/perf_event.h> /* for __get_ibs_caps */
+
 #include "op_x86_model.h"
 #include "op_counter.h"
 
@@ -446,7 +448,7 @@ static void op_amd_stop(struct op_msrs const * const msrs)
 
 static void init_ibs(void)
 {
-	ibs_caps = get_ibs_caps();
+	ibs_caps = __get_ibs_caps();
 
 	if (!ibs_caps)
 		return;
