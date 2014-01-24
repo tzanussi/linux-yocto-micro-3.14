@@ -660,7 +660,7 @@ static int stmmac_init_ptp(struct stmmac_priv *priv)
 	priv->hwts_rx_en = 0;
 
 #ifdef CONFIG_STMMAC_PTP
-	ret = return stmmac_ptp_register(priv);
+	ret = stmmac_ptp_register(priv);
 #endif
 	return ret;
 }
