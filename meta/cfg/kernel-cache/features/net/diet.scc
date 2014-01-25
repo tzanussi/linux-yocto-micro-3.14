@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Merge Andi Kleen's net/diet patches, add branch via KERNEL_FEATURES as features/net/diet.scc and toggle individual features as cfg/net/*.scc"
+define KFEATURE_COMPATIBILITY all
+
+merge net-diet
