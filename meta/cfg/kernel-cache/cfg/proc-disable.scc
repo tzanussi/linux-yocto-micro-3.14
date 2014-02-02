@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Disable proc support"
+define KFEATURE_COMPATIBILITY arch
+
+kconf non-hardware proc-disable.cfg
