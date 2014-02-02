@@ -55,24 +55,33 @@ config IP_PING
 	---help---
 	  Enable ping sockets to enable suid-less ping.
 
-config FIB_TRIE
-        bool "Use trie based routing table"
-	default y
-	---help---
+choice
+	prompt "Routing table implementation"
+	default FIB_TRIE
+	help
+	 Allows the choice of routing table implementation.
+	 Trie-based is the standard; choose the list-based version if
+	 you want smaller code size and have a very small number of
+	 routes (<10).
+
+	config FIB_TRIE
+               bool "Use trie based routing table"
+	help
 	  This is an advanced routing table implementation that scales to a larger
 	  number of routes. When in doubt say y.
 
-config FIB_LIST
-        bool "Use simple list based routing table"
-	depends on !FIB_TRIE
-	---help---
+	config FIB_LIST
+               bool "Use simple list based routing table"
+	help
 	  This is a very simple linear routing table implementation that is only
 	  suitable for clients with a very small number of routes (<10). The only
 	  advantage over FIB_TRIE is smaller code size. When in doubt say N.
 
+endchoice
+
 config IP_FIB_TRIE_STATS
 	bool "FIB TRIE statistics"
-	depends on IP_ADVANCED_ROUTER
+	depends on IP_ADVANCED_ROUTER && FIB_TRIE
 	---help---
 	  Keep track of statistics on structure of FIB TRIE table.
 	  Useful for testing and measuring TRIE performance.
