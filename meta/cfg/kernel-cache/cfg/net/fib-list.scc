@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Use simple list based routing table"
+define KFEATURE_COMPATIBILITY all
+
+kconf non-hardware fib-list.cfg
