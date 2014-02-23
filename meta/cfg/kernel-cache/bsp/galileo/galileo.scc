@@ -1,2 +1,3 @@
 kconf hardware galileo.cfg
 kconf hardware cc-optimize-for-size.cfg
+kconf hardware optimize-inlines.cfg
