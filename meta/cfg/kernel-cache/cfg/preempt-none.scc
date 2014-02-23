@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Enable PREEMPT_NONE"
+define KFEATURE_COMPATIBILITY all
+
+kconf hardware preempt-none.cfg

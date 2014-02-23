@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Disable high-res timer support"
+define KFEATURE_COMPATIBILITY arch
+
+kconf non-hardware hrt-disable.cfg
