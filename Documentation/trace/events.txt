@@ -494,3 +494,84 @@ The following commands are supported:
 
   Note that there can be only one traceon or traceoff trigger per
   triggering event.
+
+- hash
+
+  This command updates a hash table with a key composed of one or more
+  trace event format fields and a set of values consisting of one or
+  more running totals of either field values or single counts.
+
+  For example, the following trigger hashes all kmalloc events using
+  'call_site' as the hash key.  For each entry, it keeps a running
+  count of event hits ('hitcount', which is optional - counts are
+  always tallied and displayed in the output), and running sums of
+  bytes_alloc, and bytes_req:
+
+  # echo 'hash:call_site:hitcount,bytes_alloc,bytes_req' > \
+      /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
+
+  The following uses the stacktrace at the call_site as a hash key
+  instead of just the straight call_site. :
+
+  # echo 'hash:stacktrace:bytes_alloc,bytes_req' > \
+      /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
+
+  The following uses the combination of call_site and pid as a
+  composite hash key, effectively implementing a per-pid nested hash
+  by call_site:
+
+  # echo 'hash:call_site,common_pid:bytes_alloc,bytes_req' > \
+      /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
+
+  To keep a per-pid count of the number of bytes asked for in file
+  reads:
+
+  # echo 'hash:common_pid:count' > \
+      /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/trigger
+
+  To keep a per-pid, per-file count of the number of bytes asked for
+  in file reads:
+
+  # echo 'hash:common_pid,fd:count' > \
+      /sys/kernel/debug/tracing/events/syscalls/sys_enter_read/trigger
+
+  To keep a per-pid, per-file count of the number of bytes actually
+  gotten in file reads (but only if the return value wasn't negative):
+
+  # echo 'hash:common_pid,fd:ret if ret > 0' > \
+      /sys/kernel/debug/tracing/events/syscalls/sys_exit_read/trigger
+
+  The format is:
+
+      hash:<key>,<key>:<val>,<val>,<val>[:sort_keys] if filter > event/trigger
+
+  More formally,
+
+      # echo hash:key(s):value(s)[:sort_keys()][ if filter] > event/trigger
+
+  To remove the above commands:
+
+  # echo '!hash:call_site:1,bytes_alloc,bytes_req' > \
+      /sys/kernel/debug/tracing/events/kmem/kmalloc/trigger
+
+  Note that there can be any number of hash triggers per triggering
+  event.
+
+  A '-' operator is available for taking differences between numeric
+  fields.
+
+  Sorting:
+
+    The default sort key is 'hitcount' which is always available.
+    Appending ':sort=val1,val1' will sort the output using val1 as the
+    primary key and val2 as the secondary.
+
+  Modifiers:
+
+    Various fields can have a .<modifier> appended to them, which will
+    modify how they're displayed:
+
+      .hex      - display a numeric value as hex
+      .sym      - display an address as a symbol if possible
+      .syscall  - map a number representing syscall id to its syscall name
+      .execname - map a number representing a pid to its process name
