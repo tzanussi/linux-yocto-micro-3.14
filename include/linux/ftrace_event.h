@@ -353,6 +353,7 @@ enum event_trigger_type {
 	ETT_SNAPSHOT		= (1 << 1),
 	ETT_STACKTRACE		= (1 << 2),
 	ETT_EVENT_ENABLE	= (1 << 3),
+	ETT_EVENT_HASH		= (1 << 4),
 };
 
 extern void destroy_preds(struct ftrace_event_file *file);
