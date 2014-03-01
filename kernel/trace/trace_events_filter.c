@@ -947,18 +947,6 @@ int filter_assign_type(const char *type)
 	return FILTER_OTHER;
 }
 
-static bool is_function_field(struct ftrace_event_field *field)
-{
-	return field->filter_type == FILTER_TRACE_FN;
-}
-
-static bool is_string_field(struct ftrace_event_field *field)
-{
-	return field->filter_type == FILTER_DYN_STRING ||
-	       field->filter_type == FILTER_STATIC_STRING ||
-	       field->filter_type == FILTER_PTR_STRING;
-}
-
 static int is_legal_op(struct ftrace_event_field *field, int op)
 {
 	if (is_string_field(field) &&
