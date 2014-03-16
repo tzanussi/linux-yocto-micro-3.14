@@ -1277,4 +1277,13 @@ int perf_ftrace_event_register(struct ftrace_event_call *call,
 #define perf_ftrace_event_register NULL
 #endif
 
+#ifdef CONFIG_FTRACE_SYSCALLS
+const char *get_syscall_name(int syscall);
+#else
+static inline const char *get_syscall_name(int syscall)
+{
+	return NULL;
+}
+#endif /* CONFIG_FTRACE_SYSCALLS */
+
 #endif /* _LINUX_KERNEL_TRACE_H */
