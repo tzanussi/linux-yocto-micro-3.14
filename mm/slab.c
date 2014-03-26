@@ -3482,6 +3482,8 @@ kmem_cache_alloc_trace(struct kmem_cache *cachep, gfp_t flags, size_t size)
 
 	trace_kmalloc(_RET_IP_, ret,
 		      size, cachep->size, flags);
+	early_trace_kmalloc(_RET_IP_, ret,
+			    size, cachep->size, flags);
 	return ret;
 }
 EXPORT_SYMBOL(kmem_cache_alloc_trace);
@@ -3586,6 +3588,8 @@ static __always_inline void *__do_kmalloc(size_t size, gfp_t flags,
 
 	trace_kmalloc(caller, ret,
 		      size, cachep->size, flags);
+	early_trace_kmalloc(caller, ret,
+			    size, cachep->size, flags);
 
 	return ret;
 }

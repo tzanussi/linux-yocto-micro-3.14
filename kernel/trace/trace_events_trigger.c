@@ -25,6 +25,8 @@
 #include <linux/hash.h>
 #include <linux/stacktrace.h>
 #include <linux/sort.h>
+#include <linux/bootmem.h>
+#include <asm/setup.h>
 
 #include "trace.h"
 
@@ -1480,6 +1482,57 @@ DEFINE_HASH_FIELD_FN(u16);
 DEFINE_HASH_FIELD_FN(s8);
 DEFINE_HASH_FIELD_FN(u8);
 
+#define HASH_TRIGGER_BYTES	(2621440)
+
+/* enough memory for one hashtrigger of bits 11 */
+static char hashtrigger_bytes[HASH_TRIGGER_BYTES];
+static char *hashtrigger_bytes_alloc = hashtrigger_bytes;
+
+static void *hash_data_kzalloc(unsigned long size)
+{
+	return kzalloc(size, GFP_KERNEL);
+}
+
+static void *hash_data_bootmem_alloc(unsigned long size)
+{
+	char *ptr = hashtrigger_bytes_alloc;
+
+	if (hashtrigger_bytes_alloc + size > hashtrigger_bytes + HASH_TRIGGER_BYTES)
+		return NULL;
+
+	hashtrigger_bytes_alloc += size;
+
+	return ptr;
+}
+
+static void hash_data_kfree(void *obj)
+{
+	return kfree(obj);
+}
+
+static void hash_data_bootmem_free(void *obj)
+{
+}
+
+static char *hash_data_kstrdup(const char *str)
+{
+	return kstrdup(str, GFP_KERNEL);
+}
+
+static char *hash_data_bootmem_strdup(const char *str)
+{
+	char *newstr;
+
+	newstr = hash_data_bootmem_alloc(strlen(str) + 1);
+	strcpy(newstr, str);
+
+	return newstr;
+}
+
+typedef void *(*hash_data_alloc_fn_t) (unsigned long size);
+typedef void (*hash_data_free_fn_t) (void *obj);
+typedef char *(*hash_data_strdup_fn_t) (const char *str);
+
 #define HASH_TRIGGER_BITS	11
 #define COMPOUND_KEY_MAX	8
 #define HASH_VALS_MAX		16
@@ -1487,6 +1540,9 @@ DEFINE_HASH_FIELD_FN(u8);
 
 /* Largest event field string currently 32, add 1 = 64 */
 #define HASH_KEY_STRING_MAX	64
+
+/* subsys:name */
+#define MAX_EVENT_NAME_LEN	128
 
 enum hash_field_flags {
 	HASH_FIELD_SYM		= 1,
@@ -1511,6 +1567,7 @@ struct hash_trigger_sort_key {
 struct hash_trigger_data {
 	struct	hlist_head		*hashtab;
 	unsigned int			hashtab_bits;
+	char				early_event_name[MAX_EVENT_NAME_LEN];
 	char				*keys_str;
 	char				*vals_str;
 	char				*sort_keys_str;
@@ -1756,11 +1813,16 @@ hash_trigger_entry_create(struct hash_trigger_data *hash_data, void *rec,
 	bool save_execname = false;
 	unsigned int i;
 
-	if (hash_data->n_entries < hash_data->max_entries) {
-		entry = &hash_data->entries[hash_data->n_entries++];
-		if (!entry)
-			return NULL;
+	if (hash_data->drops)
+		return NULL;
+	else if (hash_data->n_entries == hash_data->max_entries) {
+		hash_data->drops = 1;
+		return NULL;
 	}
+
+	entry = &hash_data->entries[hash_data->n_entries++];
+	if (!entry)
+		return NULL;
 
 	entry->hash_data = hash_data;
 
@@ -1797,32 +1859,35 @@ hash_trigger_entry_create(struct hash_trigger_data *hash_data, void *rec,
 	return entry;
 }
 
-static void destroy_hashtab(struct hash_trigger_data *hash_data)
+static void destroy_hashtab(struct hash_trigger_data *hash_data,
+			    hash_data_free_fn_t free_fn)
 {
 	struct hlist_head *hashtab = hash_data->hashtab;
 
 	if (!hashtab)
 		return;
 
-	kfree(hashtab);
+	free_fn(hashtab);
 
 	hash_data->hashtab = NULL;
 }
 
-static void destroy_hash_field(struct hash_field *hash_field)
+static void destroy_hash_field(struct hash_field *hash_field,
+			       hash_data_free_fn_t free_fn)
 {
-	kfree(hash_field);
+	free_fn(hash_field);
 }
 
-static struct hash_field *
-create_hash_field(struct ftrace_event_field *field,
-		  struct ftrace_event_field *aux_field,
-		  unsigned long flags)
+static struct hash_field *create_hash_field(struct ftrace_event_field *field,
+					    struct ftrace_event_field *aux_field,
+					    unsigned long flags,
+					    hash_data_alloc_fn_t alloc_fn,
+					    hash_data_free_fn_t free_fn)
 {
 	hash_field_fn_t fn = hash_field_none;
 	struct hash_field *hash_field;
 
-	hash_field = kzalloc(sizeof(struct hash_field), GFP_KERNEL);
+	hash_field = alloc_fn(sizeof(struct hash_field));
 	if (!hash_field)
 		return NULL;
 
@@ -1853,31 +1918,32 @@ create_hash_field(struct ftrace_event_field *field,
  out:
 	return hash_field;
  free:
-	kfree(hash_field);
+	free_fn(hash_field);
 	hash_field = NULL;
 	goto out;
 }
 
-static void destroy_hash_fields(struct hash_trigger_data *hash_data)
+static void destroy_hash_fields(struct hash_trigger_data *hash_data,
+				hash_data_free_fn_t free_fn)
 {
 	unsigned int i;
 
 	for (i = 0; i < hash_data->n_keys; i++) {
-		destroy_hash_field(hash_data->keys[i]);
+		destroy_hash_field(hash_data->keys[i], free_fn);
 		hash_data->keys[i] = NULL;
 	}
 
 	for (i = 0; i < hash_data->n_vals; i++) {
-		destroy_hash_field(hash_data->vals[i]);
+		destroy_hash_field(hash_data->vals[i], free_fn);
 		hash_data->vals[i] = NULL;
 	}
 }
 
-static inline struct hash_trigger_sort_key *create_default_sort_key(void)
+static inline struct hash_trigger_sort_key *create_default_sort_key(hash_data_alloc_fn_t alloc_fn)
 {
 	struct hash_trigger_sort_key *sort_key;
 
-	sort_key = kzalloc(sizeof(*sort_key), GFP_KERNEL);
+	sort_key = alloc_fn(sizeof(*sort_key));
 	if (!sort_key)
 		return NULL;
 
@@ -1887,14 +1953,16 @@ static inline struct hash_trigger_sort_key *create_default_sort_key(void)
 }
 
 static inline struct hash_trigger_sort_key *
-create_sort_key(char *field_name, struct hash_trigger_data *hash_data)
+create_sort_key(char *field_name, struct hash_trigger_data *hash_data,
+		hash_data_alloc_fn_t alloc_fn,
+		hash_data_free_fn_t free_fn)
 {
 	struct hash_trigger_sort_key *sort_key;
 	bool key_part = false;
 	unsigned int j;
 
 	if (!strcmp(field_name, "hitcount"))
-		return create_default_sort_key();
+		return create_default_sort_key(alloc_fn);
 
 	if (strchr(field_name, '-')) {
 		char *aux_field_name = field_name;
@@ -1929,7 +1997,7 @@ create_sort_key(char *field_name, struct hash_trigger_data *hash_data)
 
 	return NULL;
  out:
-	sort_key = kzalloc(sizeof(*sort_key), GFP_KERNEL);
+	sort_key = alloc_fn(sizeof(*sort_key));
 	if (!sort_key)
 		return NULL;
 
@@ -1939,7 +2007,9 @@ create_sort_key(char *field_name, struct hash_trigger_data *hash_data)
 	return sort_key;
 }
 
-static int create_sort_keys(struct hash_trigger_data *hash_data)
+static int create_sort_keys(struct hash_trigger_data *hash_data,
+			    hash_data_alloc_fn_t alloc_fn,
+			    hash_data_free_fn_t free_fn)
 {
 	char *fields_str = hash_data->sort_keys_str;
 	struct hash_trigger_sort_key *sort_key;
@@ -1948,7 +2018,7 @@ static int create_sort_keys(struct hash_trigger_data *hash_data)
 	int ret = 0;
 
 	if (!fields_str) {
-		sort_key = create_default_sort_key();
+		sort_key = create_default_sort_key(alloc_fn);
 		if (!sort_key) {
 			ret = -ENOMEM;
 			goto out;
@@ -1974,7 +2044,7 @@ static int create_sort_keys(struct hash_trigger_data *hash_data)
 		}
 
 		field_name = strsep(&field_str, ".");
-		sort_key = create_sort_key(field_name, hash_data);
+		sort_key = create_sort_key(field_name, hash_data, alloc_fn, free_fn);
 		if (!sort_key) {
 			ret = -EINVAL; /* or -ENOMEM */
 			goto free;
@@ -1995,7 +2065,7 @@ free:
 	for (i = 0; i < HASH_SORT_KEYS_MAX; i++) {
 		if (!hash_data->sort_keys[i])
 			break;
-		kfree(hash_data->sort_keys[i]);
+		free_fn(hash_data->sort_keys[i]);
 		hash_data->sort_keys[i] = NULL;
 	}
 	goto out;
@@ -2004,7 +2074,9 @@ free:
 static int create_key_field(struct hash_trigger_data *hash_data,
 			    unsigned int key,
 			    struct ftrace_event_file *file,
-			    char *field_str)
+			    char *field_str,
+			    hash_data_alloc_fn_t alloc_fn,
+			    hash_data_free_fn_t free_fn)
 {
 	struct ftrace_event_field *field = NULL;
 	unsigned long flags = 0;
@@ -2034,7 +2106,8 @@ static int create_key_field(struct hash_trigger_data *hash_data,
 		}
 	}
 
-	hash_data->keys[key] = create_hash_field(field, NULL, flags);
+	hash_data->keys[key] = create_hash_field(field, NULL, flags,
+						 alloc_fn, free_fn);
 	if (!hash_data->keys[key]) {
 		ret = -ENOMEM;
 		goto out;
@@ -2047,7 +2120,9 @@ static int create_key_field(struct hash_trigger_data *hash_data,
 static int create_val_field(struct hash_trigger_data *hash_data,
 			    unsigned int val,
 			    struct ftrace_event_file *file,
-			    char *field_str)
+			    char *field_str,
+			    hash_data_alloc_fn_t alloc_fn,
+			    hash_data_free_fn_t free_fn)
 {
 	struct ftrace_event_field *field = NULL;
 	unsigned long flags = 0;
@@ -2075,7 +2150,9 @@ static int create_val_field(struct hash_trigger_data *hash_data,
 			goto out;
 		}
 
-		hash_data->vals[val] = create_hash_field(m_field, s_field, flags);
+		hash_data->vals[val] = create_hash_field(m_field, s_field,
+							 flags, alloc_fn,
+							 free_fn);
 		if (!hash_data->vals[val]) {
 			ret = -ENOMEM;
 			goto out;
@@ -2097,7 +2174,8 @@ static int create_val_field(struct hash_trigger_data *hash_data,
 			goto out;
 		}
 
-		hash_data->vals[val] = create_hash_field(field, NULL, flags);
+		hash_data->vals[val] = create_hash_field(field, NULL, flags,
+							 alloc_fn, free_fn);
 		if (!hash_data->vals[val]) {
 			ret = -ENOMEM;
 			goto out;
@@ -2109,7 +2187,9 @@ static int create_val_field(struct hash_trigger_data *hash_data,
 }
 
 static int create_hash_fields(struct hash_trigger_data *hash_data,
-			      struct ftrace_event_file *file)
+			      struct ftrace_event_file *file,
+			      hash_data_alloc_fn_t alloc_fn,
+			      hash_data_free_fn_t free_fn)
 {
 	char *fields_str, *field_str;
 	unsigned int i;
@@ -2127,7 +2207,8 @@ static int create_hash_fields(struct hash_trigger_data *hash_data,
 				break;
 		}
 
-		ret = create_key_field(hash_data, i, file, field_str);
+		ret = create_key_field(hash_data, i, file, field_str,
+				       alloc_fn, free_fn);
 		if (ret)
 			goto out;
 	}
@@ -2144,43 +2225,45 @@ static int create_hash_fields(struct hash_trigger_data *hash_data,
 				break;
 		}
 
-		ret = create_val_field(hash_data, i, file, field_str);
+		ret = create_val_field(hash_data, i, file, field_str,
+				       alloc_fn, free_fn);
 		if (ret)
 			goto out;
 	}
 
-	ret = create_sort_keys(hash_data);
+	ret = create_sort_keys(hash_data, alloc_fn, free_fn);
  out:
 	return ret;
 }
 
-static void destroy_hashdata(struct hash_trigger_data *hash_data)
+static void destroy_hashdata(struct hash_trigger_data *hash_data,
+			     hash_data_free_fn_t free_fn)
 {
 	synchronize_sched();
 
-	kfree(hash_data->keys_str);
-	kfree(hash_data->vals_str);
-	kfree(hash_data->sort_keys_str);
+	free_fn(hash_data->keys_str);
+	free_fn(hash_data->vals_str);
+	free_fn(hash_data->sort_keys_str);
 	hash_data->keys_str = NULL;
 	hash_data->vals_str = NULL;
 	hash_data->sort_keys_str = NULL;
 
-	kfree(hash_data->entries);
+	free_fn(hash_data->entries);
 	hash_data->entries = NULL;
 
-	kfree(hash_data->struct_stacktrace_entries);
+	free_fn(hash_data->struct_stacktrace_entries);
 	hash_data->struct_stacktrace_entries = NULL;
 
-	kfree(hash_data->stacktrace_entries);
+	free_fn(hash_data->stacktrace_entries);
 	hash_data->stacktrace_entries = NULL;
 
-	kfree(hash_data->hash_key_string_entries);
+	free_fn(hash_data->hash_key_string_entries);
 	hash_data->hash_key_string_entries = NULL;
 
-	destroy_hash_fields(hash_data);
-	destroy_hashtab(hash_data);
+	destroy_hash_fields(hash_data, free_fn);
+	destroy_hashtab(hash_data, free_fn);
 
-	kfree(hash_data);
+	free_fn(hash_data);
 }
 
 static struct hash_trigger_data *create_hash_data(unsigned int hashtab_bits,
@@ -2188,13 +2271,16 @@ static struct hash_trigger_data *create_hash_data(unsigned int hashtab_bits,
 						  const char *vals,
 						  const char *sort_keys,
 						  struct ftrace_event_file *file,
+						  hash_data_alloc_fn_t alloc_fn,
+						  hash_data_free_fn_t free_fn,
+						  hash_data_strdup_fn_t strdup_fn,
 						  int *ret)
 {
 	unsigned int hashtab_size = (1 << hashtab_bits);
 	struct hash_trigger_data *hash_data;
 	unsigned int i, size;
 
-	hash_data = kzalloc(sizeof(*hash_data), GFP_KERNEL);
+	hash_data = alloc_fn(sizeof(*hash_data));
 	if (!hash_data)
 		return NULL;
 
@@ -2208,36 +2294,35 @@ static struct hash_trigger_data *create_hash_data(unsigned int hashtab_bits,
 	/* Also, use vmalloc or something for these large blocks. */
 	hash_data->max_entries = hashtab_size * 2;
 	size = sizeof(struct hash_trigger_entry) * hash_data->max_entries;
-	hash_data->entries = kzalloc(size, GFP_KERNEL);
+	hash_data->entries = alloc_fn(size);
 	if (!hash_data->entries)
 		goto free;
 
 	size = sizeof(struct stack_trace) * hash_data->max_entries;
-	hash_data->struct_stacktrace_entries = kzalloc(size, GFP_KERNEL);
+	hash_data->struct_stacktrace_entries = alloc_fn(size);
 	if (!hash_data->struct_stacktrace_entries)
 		goto free;
 
 	size = sizeof(unsigned long) * HASH_STACKTRACE_DEPTH * hash_data->max_entries;
-	hash_data->stacktrace_entries = kzalloc(size, GFP_KERNEL);
+	hash_data->stacktrace_entries = alloc_fn(size);
 	if (!hash_data->stacktrace_entries)
 		goto free;
 
 	size = sizeof(char) * HASH_KEY_STRING_MAX * hash_data->max_entries;
-	hash_data->hash_key_string_entries = kzalloc(size, GFP_KERNEL);
+	hash_data->hash_key_string_entries = alloc_fn(size);
 	if (!hash_data->hash_key_string_entries)
 		goto free;
 
-	hash_data->keys_str = kstrdup(keys, GFP_KERNEL);
-	hash_data->vals_str = kstrdup(vals, GFP_KERNEL);
+	hash_data->keys_str = strdup_fn(keys);
+	hash_data->vals_str = strdup_fn(vals);
 	if (sort_keys)
-		hash_data->sort_keys_str = kstrdup(sort_keys, GFP_KERNEL);
+		hash_data->sort_keys_str = strdup_fn(sort_keys);
 
-	*ret = create_hash_fields(hash_data, file);
+	*ret = create_hash_fields(hash_data, file, alloc_fn, free_fn);
 	if (*ret < 0)
 		goto free;
 
-	hash_data->hashtab = kzalloc(hashtab_size * sizeof(struct hlist_head),
-				     GFP_KERNEL);
+	hash_data->hashtab = alloc_fn(hashtab_size * sizeof(struct hlist_head));
 	if (!hash_data->hashtab) {
 		*ret = -ENOMEM;
 		goto free;
@@ -2252,7 +2337,7 @@ static struct hash_trigger_data *create_hash_data(unsigned int hashtab_bits,
  out:
 	return hash_data;
  free:
-	destroy_hashdata(hash_data);
+	destroy_hashdata(hash_data, free_fn);
 	hash_data = NULL;
 	goto out;
 }
@@ -2655,6 +2740,45 @@ print_entries_unsorted(struct seq_file *m, struct hash_trigger_data *hash_data)
 	return true;
 }
 
+#define EARLY_HASHTRIGGERS_MAX	8
+
+struct early_hashtrigger {
+	char				event_name[MAX_EVENT_NAME_LEN];
+	struct hash_trigger_data	*hash_data;
+	bool				enabled;
+};
+
+static struct early_hashtrigger early_hashtriggers[EARLY_HASHTRIGGERS_MAX];
+static unsigned int n_early_hashtriggers;
+
+struct early_hashtrigger *find_early_hashtrigger(const char *event_name)
+{
+	unsigned int i;
+
+	for (i = 0; i < EARLY_HASHTRIGGERS_MAX; i++) {
+		if (!strlen(early_hashtriggers[i].event_name))
+			break;
+		if (!strcmp(early_hashtriggers[i].event_name, event_name))
+			return &early_hashtriggers[i];
+	}
+
+	return NULL;
+}
+
+void disable_early_hashtrigger(struct ftrace_event_file *file)
+{
+	struct early_hashtrigger *early_hashtrigger;
+	char event_name[MAX_EVENT_NAME_LEN];
+
+	sprintf(event_name, "%s:%s", file->event_call->class->system,
+		file->event_call->name);
+	early_hashtrigger = find_early_hashtrigger(event_name);
+	if (!early_hashtrigger)
+		return;
+
+	early_hashtrigger->enabled = false;
+}
+
 static int
 event_hash_trigger_print(struct seq_file *m, struct event_trigger_ops *ops,
 			 struct event_trigger_data *data)
@@ -2665,6 +2789,31 @@ event_hash_trigger_print(struct seq_file *m, struct event_trigger_ops *ops,
 
 	ret = event_trigger_print("hash", m, (void *)data->count,
 				  data->filter_str);
+
+	if (strlen(hash_data->early_event_name)) {
+		struct early_hashtrigger *early_hashtrigger;
+		struct hash_trigger_data *early_hash_data;
+
+		early_hashtrigger = find_early_hashtrigger(hash_data->early_event_name);
+		if (early_hashtrigger) {
+			early_hash_data = early_hashtrigger->hash_data;
+			if (early_hash_data) {
+				seq_printf(m, "Early %s events:\n",
+					   early_hash_data->early_event_name);
+
+				sorted = print_entries_sorted(m, early_hash_data);
+				if (!sorted)
+					print_entries_unsorted(m, early_hash_data);
+
+				seq_printf(m, "Totals:\n    Hits: %lu\n    Entries: %lu\n    Dropped: %lu\n",
+					   early_hash_data->total_hits, early_hash_data->total_entries,
+					   early_hash_data->drops);
+
+				if (!sorted)
+					seq_printf(m, "Unsorted (couldn't alloc memory for sorting)\n");
+			}
+		}
+	}
 
 	sorted = print_entries_sorted(m, hash_data);
 	if (!sorted)
@@ -2690,7 +2839,8 @@ event_hash_trigger_free(struct event_trigger_ops *ops,
 
 	data->ref--;
 	if (!data->ref) {
-		destroy_hashdata(hash_data);
+		/* This won't ever be called for boot triggers */
+		destroy_hashdata(hash_data, hash_data_kfree);
 		trigger_data_free(data);
 	}
 }
@@ -2741,7 +2891,13 @@ event_hash_trigger_func(struct event_command *cmd_ops,
 		sort_keys = strsep(&trigger, ":");
 
 	hash_data = create_hash_data(HASH_TRIGGER_BITS, keys, vals, sort_keys,
-				     file, &ret);
+				     file, hash_data_kzalloc,
+				     hash_data_kfree,
+				     hash_data_kstrdup,
+				     &ret);
+	sprintf(hash_data->early_event_name, "%s:%s", file->event_call->class->system,
+		file->event_call->name);
+
 	if (ret)
 		return ret;
 
@@ -2785,6 +2941,7 @@ event_hash_trigger_func(struct event_command *cmd_ops,
 		goto out_free;
 
  out_reg:
+	disable_early_hashtrigger(file);
 	ret = cmd_ops->reg(glob, trigger_ops, trigger_data, file);
 	/*
 	 * The above returns on success the # of functions enabled,
@@ -2805,7 +2962,8 @@ event_hash_trigger_func(struct event_command *cmd_ops,
 	if (cmd_ops->set_filter)
 		cmd_ops->set_filter(NULL, trigger_data, NULL);
 	kfree(trigger_data);
-	destroy_hashdata(hash_data);
+	/* This won't ever be called for boot triggers */
+	destroy_hashdata(hash_data, hash_data_kfree);
 	goto out;
 }
 
@@ -2840,3 +2998,166 @@ __init int register_trigger_cmds(void)
 
 	return 0;
 }
+
+static char early_hashtriggers_buf[COMMAND_LINE_SIZE] __initdata;
+
+static char fakerec[512];
+
+static void event_early_hash_trigger(struct hash_trigger_data *hash_data)
+{
+	struct hash_trigger_entry *entry;
+	struct hash_field *hash_field;
+
+	struct stack_trace stacktrace;
+	unsigned long entries[HASH_STACKTRACE_DEPTH];
+
+	unsigned long flags;
+
+	if (hash_data->drops) {
+		hash_data->drops++;
+		return;
+	}
+
+	hash_field = hash_data->keys[0];
+
+	if (hash_field->flags & HASH_FIELD_STACKTRACE) {
+		stacktrace.max_entries = HASH_STACKTRACE_DEPTH;
+		stacktrace.entries = entries;
+		stacktrace.nr_entries = 0;
+		stacktrace.skip = HASH_STACKTRACE_SKIP;
+
+		save_stack_trace(&stacktrace);
+	}
+
+	spin_lock_irqsave(&hash_data->lock, flags);
+	entry = hash_trigger_entry_find(hash_data, fakerec, &stacktrace);
+	spin_unlock_irqrestore(&hash_data->lock, flags);
+
+	if (!entry) {
+		entry = hash_trigger_entry_create(hash_data, fakerec, &stacktrace);
+		WARN_ON_ONCE(!entry);
+		if (!entry) {
+			spin_unlock_irqrestore(&hash_data->lock, flags);
+			return;
+		}
+		spin_lock_irqsave(&hash_data->lock, flags);
+		hash_trigger_entry_insert(hash_data, entry, fakerec, &stacktrace);
+		spin_unlock_irqrestore(&hash_data->lock, flags);
+	}
+
+	spin_lock_irqsave(&hash_data->lock, flags);
+	hash_trigger_entry_update(hash_data, entry, fakerec);
+	hash_data->total_hits++;
+	spin_unlock_irqrestore(&hash_data->lock, flags);
+}
+
+/* per-event hacks */
+
+void early_trace_kmalloc(unsigned long call_site, const void *ptr,
+			 size_t bytes_req, size_t bytes_alloc, gfp_t gfp_flags)
+{
+	struct early_hashtrigger *early_hashtrigger;
+	struct hash_trigger_data *hash_data;
+
+	early_hashtrigger = find_early_hashtrigger("kmem:kmalloc");
+	if (!early_hashtrigger)
+		return;
+
+	if (!early_hashtrigger->enabled)
+		return;
+
+	hash_data = early_hashtrigger->hash_data;
+	if (!hash_data)
+		return;
+
+	event_early_hash_trigger(hash_data);
+}
+EXPORT_SYMBOL_GPL(early_trace_kmalloc);
+
+/*
+ * For now, we only allow subsys:event:hash:stacktrace:hitcount, which
+ * allows us to use NULL event_files.  The source will manually do
+ * what it wants.
+ */
+static __init int setup_early_hashtrigger(char *hashtrigger_str)
+{
+	struct hash_trigger_data *hash_data;
+	char *sort_keys = NULL;
+	char *trigger;
+	char *subsys, *event;
+	char *hash;
+	char *vals;
+	char *keys;
+	int ret = 0;
+
+	if (n_early_hashtriggers == EARLY_HASHTRIGGERS_MAX)
+		return -EINVAL;
+
+	/* separate the trigger from the filter (s:e:n [if filter]) */
+	trigger = strsep(&hashtrigger_str, " \t");
+	if (!trigger)
+		return -EINVAL;
+
+	subsys = strsep(&trigger, ":");
+	if (!subsys || !trigger)
+		return -EINVAL;
+
+	event = strsep(&trigger, ":");
+	if (!event || !trigger)
+		return -EINVAL;
+
+	hash = strsep(&trigger, ":");
+	if (!hash || !trigger)
+		return -EINVAL;
+
+	keys = strsep(&trigger, ":");
+	if (!keys || !trigger)
+		return -EINVAL;
+
+	vals = strsep(&trigger, ":");
+	if (!vals) // zzzz for normal case too?
+		return -EINVAL;
+
+	if (trigger) {
+		sort_keys = strsep(&trigger, ":");
+		if (!sort_keys) // zzzz for normal case too?
+			return -EINVAL;
+	}
+
+	hash_data = create_hash_data(11 /* 2048 */, keys, vals, sort_keys,
+				     NULL, hash_data_bootmem_alloc,
+				     hash_data_bootmem_free,
+				     hash_data_bootmem_strdup,
+				     &ret);
+	sprintf(hash_data->early_event_name, "%s:%s", subsys, event);
+
+	if (!hash_data)
+		return -EINVAL;
+
+	sprintf(early_hashtriggers[n_early_hashtriggers].event_name, "%s:%s",
+		subsys, event);
+
+	early_hashtriggers[n_early_hashtriggers].hash_data = hash_data;
+	early_hashtriggers[n_early_hashtriggers++].enabled = true;
+
+	return ret;
+}
+
+static __init int setup_early_hashtriggers(char *str)
+{
+	char *hashtrigger_str, *hashtrigger_strings;
+	int ret = 0;
+
+	strlcpy(early_hashtriggers_buf, str, COMMAND_LINE_SIZE);
+	hashtrigger_strings = early_hashtriggers_buf;
+
+	/* Use semicolon as hashtrigger separator.  We already use ',:=-' */
+	while ((hashtrigger_str = strsep(&hashtrigger_strings, ";"))) {
+		ret = setup_early_hashtrigger(hashtrigger_str);
+		if (ret)
+			break;
+	}
+
+	return ret;
+}
+early_param("trace_event_hashtriggers", setup_early_hashtriggers);
