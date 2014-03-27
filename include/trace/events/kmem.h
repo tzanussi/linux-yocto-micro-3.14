@@ -321,6 +321,10 @@ TRACE_EVENT(mm_page_alloc_extfrag,
 		__entry->change_ownership)
 );
 
+extern void early_trace_mm_page_alloc_extfrag(struct page *page,
+					      int alloc_order, int fallback_order,
+					      int alloc_migratetype, int fallback_migratetype, int new_migratetype);
+
 #endif /* _TRACE_KMEM_H */
 
 /* This part must be outside protection */
