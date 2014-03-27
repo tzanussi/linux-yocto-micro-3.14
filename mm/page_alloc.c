@@ -2769,6 +2769,7 @@ retry_cpuset:
 	}
 
 	trace_mm_page_alloc(page, order, gfp_mask, migratetype);
+	early_trace_mm_page_alloc(page, order, gfp_mask, migratetype);
 
 out:
 	/*

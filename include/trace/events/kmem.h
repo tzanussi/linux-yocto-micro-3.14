@@ -234,6 +234,9 @@ TRACE_EVENT(mm_page_alloc,
 		show_gfp_flags(__entry->gfp_flags))
 );
 
+extern void early_trace_mm_page_alloc(struct page *page, unsigned int order,
+				      gfp_t gfp_flags, int migratetype);
+
 DECLARE_EVENT_CLASS(mm_page,
 
 	TP_PROTO(struct page *page, unsigned int order, int migratetype),

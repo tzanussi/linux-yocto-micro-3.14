@@ -3118,6 +3118,18 @@ void early_trace_kmem_cache_alloc_node(unsigned long call_site, const void *ptr,
 }
 EXPORT_SYMBOL_GPL(early_trace_kmem_cache_alloc_node);
 
+
+void early_trace_mm_page_alloc(struct page *page, unsigned int order,
+			       gfp_t gfp_flags, int migratetype)
+{
+	struct hash_trigger_data *hash_data;
+
+	hash_data = early_event_enabled("kmem:mm_page_alloc");
+	if (hash_data)
+		event_early_hash_trigger(hash_data);
+}
+EXPORT_SYMBOL_GPL(early_trace_mm_page_alloc);
+
 /*
  * For now, we only allow subsys:event:hash:stacktrace:hitcount, which
  * allows us to use NULL event_files.  The source will manually do
