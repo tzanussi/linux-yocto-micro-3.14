@@ -270,6 +270,9 @@ DEFINE_EVENT(mm_page, mm_page_alloc_zone_locked,
 	TP_ARGS(page, order, migratetype)
 );
 
+extern void early_trace_mm_page_alloc_zone_locked(struct page *page,
+						  unsigned int order, int migratetype);
+
 DEFINE_EVENT_PRINT(mm_page, mm_page_pcpu_drain,
 
 	TP_PROTO(struct page *page, unsigned int order, int migratetype),

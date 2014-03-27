@@ -3142,6 +3142,16 @@ void early_trace_mm_page_alloc_extfrag(struct page *page,
 }
 EXPORT_SYMBOL_GPL(early_trace_mm_page_alloc_extfrag);
 
+void early_trace_mm_page_alloc_zone_locked(struct page *page,
+					   unsigned int order, int migratetype)
+{
+	struct hash_trigger_data *hash_data;
+
+	hash_data = early_event_enabled("kmem:mm_page_alloc_zone_locked");
+	if (hash_data)
+		event_early_hash_trigger(hash_data);
+}
+EXPORT_SYMBOL_GPL(early_trace_mm_page_alloc_zone_locked);
 
 /*
  * For now, we only allow subsys:event:hash:stacktrace:hitcount, which

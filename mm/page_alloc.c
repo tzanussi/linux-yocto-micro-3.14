@@ -1164,6 +1164,7 @@ retry_reserve:
 	}
 
 	trace_mm_page_alloc_zone_locked(page, order, migratetype);
+	early_trace_mm_page_alloc_zone_locked(page, order, migratetype);
 	return page;
 }
 
