@@ -2522,6 +2522,8 @@ void *kmem_cache_alloc_node_trace(struct kmem_cache *s,
 
 	trace_kmalloc_node(_RET_IP_, ret,
 			   size, s->size, gfpflags, node);
+	early_trace_kmalloc_node(_RET_IP_, ret,
+				 size, s->size, gfpflags, node);
 	return ret;
 }
 EXPORT_SYMBOL(kmem_cache_alloc_node_trace);
@@ -3345,6 +3347,9 @@ void *__kmalloc_node(size_t size, gfp_t flags, int node)
 		trace_kmalloc_node(_RET_IP_, ret,
 				   size, PAGE_SIZE << get_order(size),
 				   flags, node);
+		early_trace_kmalloc_node(_RET_IP_, ret,
+					 size, PAGE_SIZE << get_order(size),
+					 flags, node);
 
 		return ret;
 	}
@@ -3357,6 +3362,7 @@ void *__kmalloc_node(size_t size, gfp_t flags, int node)
 	ret = slab_alloc_node(s, flags, node, _RET_IP_);
 
 	trace_kmalloc_node(_RET_IP_, ret, size, s->size, flags, node);
+	early_trace_kmalloc_node(_RET_IP_, ret, size, s->size, flags, node);
 
 	return ret;
 }
@@ -3866,6 +3872,9 @@ void *__kmalloc_node_track_caller(size_t size, gfp_t gfpflags,
 		trace_kmalloc_node(caller, ret,
 				   size, PAGE_SIZE << get_order(size),
 				   gfpflags, node);
+		early_trace_kmalloc_node(caller, ret,
+					 size, PAGE_SIZE << get_order(size),
+					 gfpflags, node);
 
 		return ret;
 	}
@@ -3879,6 +3888,7 @@ void *__kmalloc_node_track_caller(size_t size, gfp_t gfpflags,
 
 	/* Honor the call site pointer we received. */
 	trace_kmalloc_node(caller, ret, size, s->size, gfpflags, node);
+	early_trace_kmalloc_node(caller, ret, size, s->size, gfpflags, node);
 
 	return ret;
 }

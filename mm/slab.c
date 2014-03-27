@@ -3528,6 +3528,9 @@ void *kmem_cache_alloc_node_trace(struct kmem_cache *cachep,
 	trace_kmalloc_node(_RET_IP_, ret,
 			   size, cachep->size,
 			   flags, nodeid);
+	early_trace_kmalloc_node(_RET_IP_, ret,
+				 size, cachep->size,
+				 flags, nodeid);
 	return ret;
 }
 EXPORT_SYMBOL(kmem_cache_alloc_node_trace);

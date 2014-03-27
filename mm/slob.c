@@ -447,6 +447,8 @@ __do_kmalloc_node(size_t size, gfp_t gfp, int node, unsigned long caller)
 
 		trace_kmalloc_node(caller, ret,
 				   size, size + align, gfp, node);
+		early_trace_kmalloc_node(caller, ret,
+					 size, size + align, gfp, node);
 	} else {
 		unsigned int order = get_order(size);
 
@@ -456,6 +458,8 @@ __do_kmalloc_node(size_t size, gfp_t gfp, int node, unsigned long caller)
 
 		trace_kmalloc_node(caller, ret,
 				   size, PAGE_SIZE << order, gfp, node);
+		early_trace_kmalloc_node(caller, ret,
+					 size, PAGE_SIZE << order, gfp, node);
 	}
 
 	kmemleak_alloc(ret, size, 1, gfp);
