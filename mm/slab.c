@@ -3467,6 +3467,8 @@ void *kmem_cache_alloc(struct kmem_cache *cachep, gfp_t flags)
 
 	trace_kmem_cache_alloc(_RET_IP_, ret,
 			       cachep->object_size, cachep->size, flags);
+	early_trace_kmem_cache_alloc(_RET_IP_, ret,
+				     cachep->object_size, cachep->size, flags);
 
 	return ret;
 }

@@ -3053,26 +3053,46 @@ static void event_early_hash_trigger(struct hash_trigger_data *hash_data)
 
 /* per-event hacks */
 
-void early_trace_kmalloc(unsigned long call_site, const void *ptr,
-			 size_t bytes_req, size_t bytes_alloc, gfp_t gfp_flags)
+static inline struct hash_trigger_data *early_event_enabled(const char *event_name)
 {
 	struct early_hashtrigger *early_hashtrigger;
 	struct hash_trigger_data *hash_data;
 
-	early_hashtrigger = find_early_hashtrigger("kmem:kmalloc");
+	early_hashtrigger = find_early_hashtrigger(event_name);
 	if (!early_hashtrigger)
-		return;
+		return NULL;
 
 	if (!early_hashtrigger->enabled)
-		return;
+		return NULL;
 
 	hash_data = early_hashtrigger->hash_data;
 	if (!hash_data)
-		return;
+		return NULL;
 
-	event_early_hash_trigger(hash_data);
+	return hash_data;
+}
+
+void early_trace_kmalloc(unsigned long call_site, const void *ptr,
+			 size_t bytes_req, size_t bytes_alloc, gfp_t gfp_flags)
+{
+	struct hash_trigger_data *hash_data;
+
+	hash_data = early_event_enabled("kmem:kmalloc");
+	if (hash_data)
+		event_early_hash_trigger(hash_data);
 }
 EXPORT_SYMBOL_GPL(early_trace_kmalloc);
+
+void early_trace_kmem_cache_alloc(unsigned long call_site, const void *ptr,
+				  size_t bytes_req, size_t bytes_alloc, gfp_t gfp_flags)
+{
+	struct hash_trigger_data *hash_data;
+
+	hash_data = early_event_enabled("kmem:kmem_cache_alloc");
+	if (hash_data)
+		event_early_hash_trigger(hash_data);
+}
+EXPORT_SYMBOL_GPL(early_trace_kmem_cache_alloc);
 
 /*
  * For now, we only allow subsys:event:hash:stacktrace:hitcount, which

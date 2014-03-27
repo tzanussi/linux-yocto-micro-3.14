@@ -61,6 +61,9 @@ DEFINE_EVENT(kmem_alloc, kmem_cache_alloc,
 	TP_ARGS(call_site, ptr, bytes_req, bytes_alloc, gfp_flags)
 );
 
+extern void early_trace_kmem_cache_alloc(unsigned long call_site, const void *ptr,
+					 size_t bytes_req, size_t bytes_alloc, gfp_t gfp_flags);
+
 DECLARE_EVENT_CLASS(kmem_alloc_node,
 
 	TP_PROTO(unsigned long call_site,
