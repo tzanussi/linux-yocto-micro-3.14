@@ -551,11 +551,17 @@ void *slob_alloc_node(struct kmem_cache *c, gfp_t flags, int node)
 		trace_kmem_cache_alloc_node(_RET_IP_, b, c->object_size,
 					    SLOB_UNITS(c->size) * SLOB_UNIT,
 					    flags, node);
+		early_trace_kmem_cache_alloc_node(_RET_IP_, b, c->object_size,
+						  SLOB_UNITS(c->size) * SLOB_UNIT,
+						  flags, node);
 	} else {
 		b = slob_new_pages(flags, get_order(c->size), node);
 		trace_kmem_cache_alloc_node(_RET_IP_, b, c->object_size,
 					    PAGE_SIZE << get_order(c->size),
 					    flags, node);
+		early_trace_kmem_cache_alloc_node(_RET_IP_, b, c->object_size,
+						  PAGE_SIZE << get_order(c->size),
+						  flags, node);
 	}
 
 	if (b && c->ctor)

@@ -3100,11 +3100,23 @@ void early_trace_kmalloc_node(unsigned long call_site, const void *ptr,
 {
 	struct hash_trigger_data *hash_data;
 
-	hash_data = early_event_enabled("kmem:kmalloc");
+	hash_data = early_event_enabled("kmem:kmalloc_node");
 	if (hash_data)
 		event_early_hash_trigger(hash_data);
 }
 EXPORT_SYMBOL_GPL(early_trace_kmalloc_node);
+
+void early_trace_kmem_cache_alloc_node(unsigned long call_site, const void *ptr,
+				       size_t bytes_req, size_t bytes_alloc,
+				       gfp_t gfp_flags, int node)
+{
+	struct hash_trigger_data *hash_data;
+
+	hash_data = early_event_enabled("kmem:kmem_cache_alloc_node");
+	if (hash_data)
+		event_early_hash_trigger(hash_data);
+}
+EXPORT_SYMBOL_GPL(early_trace_kmem_cache_alloc_node);
 
 /*
  * For now, we only allow subsys:event:hash:stacktrace:hitcount, which

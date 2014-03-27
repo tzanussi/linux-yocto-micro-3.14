@@ -3510,6 +3510,9 @@ void *kmem_cache_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid)
 	trace_kmem_cache_alloc_node(_RET_IP_, ret,
 				    cachep->object_size, cachep->size,
 				    flags, nodeid);
+	early_trace_kmem_cache_alloc_node(_RET_IP_, ret,
+					  cachep->object_size, cachep->size,
+					  flags, nodeid);
 
 	return ret;
 }
