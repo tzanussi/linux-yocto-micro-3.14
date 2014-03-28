@@ -1482,9 +1482,9 @@ DEFINE_HASH_FIELD_FN(u16);
 DEFINE_HASH_FIELD_FN(s8);
 DEFINE_HASH_FIELD_FN(u8);
 
-#define HASH_TRIGGER_BYTES	(2621440)
+#define HASH_TRIGGER_BYTES	(2621440 * 2)
 
-/* enough memory for one hashtrigger of bits 11 */
+/* enough memory for one hashtrigger of bits 12 */
 static char hashtrigger_bytes[HASH_TRIGGER_BYTES];
 static char *hashtrigger_bytes_alloc = hashtrigger_bytes;
 
@@ -1619,7 +1619,7 @@ struct hash_trigger_entry {
 };
 
 #define HASH_STACKTRACE_DEPTH 16
-#define HASH_STACKTRACE_SKIP 4
+#define HASH_STACKTRACE_SKIP 3
 
 static hash_field_fn_t select_value_fn(int field_size, int field_is_signed)
 {
@@ -3203,7 +3203,7 @@ static __init int setup_early_hashtrigger(char *hashtrigger_str)
 			return -EINVAL;
 	}
 
-	hash_data = create_hash_data(11 /* 2048 */, keys, vals, sort_keys,
+	hash_data = create_hash_data(12 /* 2048 * 2 */, keys, vals, sort_keys,
 				     NULL, hash_data_bootmem_alloc,
 				     hash_data_bootmem_free,
 				     hash_data_bootmem_strdup,
