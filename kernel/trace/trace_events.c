@@ -1465,7 +1465,7 @@ event_subsystem_dir(struct trace_array *tr, const char *name,
 	dir->subsystem = system;
 	file->system = dir;
 
-	entry = debugfs_create_file("filter", 0644, dir->entry, dir,
+	entry = debugfs_create_file("filter", 0666, dir->entry, dir,
 				    &ftrace_subsystem_filter_fops);
 	if (!entry) {
 		kfree(system->filter);
@@ -1473,7 +1473,7 @@ event_subsystem_dir(struct trace_array *tr, const char *name,
 		pr_warning("Could not create debugfs '%s/filter' entry\n", name);
 	}
 
-	trace_create_file("enable", 0644, dir->entry, dir,
+	trace_create_file("enable", 0666, dir->entry, dir,
 			  &ftrace_system_enable_fops);
 
 	list_add(&dir->list, &tr->systems);
@@ -1518,7 +1518,7 @@ event_create_dir(struct dentry *parent, struct ftrace_event_file *file)
 	}
 
 	if (call->class->reg && !(call->flags & TRACE_EVENT_FL_IGNORE_ENABLE))
-		trace_create_file("enable", 0644, file->dir, file,
+		trace_create_file("enable", 0666, file->dir, file,
 				  &ftrace_enable_fops);
 
 #ifdef CONFIG_PERF_EVENTS
@@ -1541,10 +1541,10 @@ event_create_dir(struct dentry *parent, struct ftrace_event_file *file)
 			return -1;
 		}
 	}
-	trace_create_file("filter", 0644, file->dir, file,
+	trace_create_file("filter", 0666, file->dir, file,
 			  &ftrace_event_filter_fops);
 
-	trace_create_file("trigger", 0644, file->dir, file,
+	trace_create_file("trigger", 0666, file->dir, file,
 			  &event_trigger_fops);
 
 	trace_create_file("format", 0444, file->dir, call,
@@ -2253,7 +2253,7 @@ create_event_toplevel_files(struct dentry *parent, struct trace_array *tr)
 			  ring_buffer_print_entry_header,
 			  &ftrace_show_header_fops);
 
-	trace_create_file("enable", 0644, d_events,
+	trace_create_file("enable", 0666, d_events,
 			  tr, &ftrace_tr_enable_fops);
 
 	tr->event_dir = d_events;
