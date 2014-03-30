@@ -649,6 +649,9 @@ extern void ftrace_init(void);
 static inline void ftrace_init(void) { }
 #endif
 
+extern void ftrace_set_early_tracing_done(void);
+extern bool ftrace_early_tracing_done(void);
+
 /*
  * Structure that defines an entry function trace.
  */

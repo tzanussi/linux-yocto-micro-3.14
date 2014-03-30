@@ -3081,10 +3081,15 @@ static void event_early_hash_trigger(struct hash_trigger_data *hash_data,
 
 /* per-event hacks */
 
+static bool early_trace_initonly;
+
 static inline struct hash_trigger_data *early_event_enabled(const char *event_name)
 {
 	struct early_hashtrigger *early_hashtrigger;
 	struct hash_trigger_data *hash_data;
+
+	if (early_trace_initonly && ftrace_early_tracing_done())
+		return NULL;
 
 	early_hashtrigger = find_early_hashtrigger(event_name);
 	if (!early_hashtrigger)
@@ -3211,6 +3216,7 @@ static __init int setup_early_hashtrigger(char *hashtrigger_str)
 	char *hash;
 	char *vals;
 	char *keys;
+	char *initonly;
 	int ret = 0;
 
 	if (n_early_hashtriggers == EARLY_HASHTRIGGERS_MAX)
@@ -3240,6 +3246,10 @@ static __init int setup_early_hashtrigger(char *hashtrigger_str)
 	vals = strsep(&trigger, ":");
 	if (!vals) // zzzz for normal case too?
 		return -EINVAL;
+
+	initonly = strsep(&trigger, ":");
+	if (!strcmp(initonly, "initonly"))
+		early_trace_initonly = true;
 
 	if (trigger) {
 		sort_keys = strsep(&trigger, ":");

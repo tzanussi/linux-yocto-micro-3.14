@@ -4406,6 +4406,18 @@ void __init ftrace_init(void)
 	ftrace_disabled = 1;
 }
 
+static bool early_tracing_done;
+
+bool ftrace_early_tracing_done(void)
+{
+	return early_tracing_done;
+}
+
+void ftrace_set_early_tracing_done(void)
+{
+	early_tracing_done = true;
+}
+
 #else
 
 static struct ftrace_ops global_ops = {
