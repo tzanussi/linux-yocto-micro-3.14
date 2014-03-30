@@ -1551,6 +1551,7 @@ enum hash_field_flags {
 	HASH_FIELD_STRING	= 8,
 	HASH_FIELD_EXECNAME	= 16,
 	HASH_FIELD_SYSCALL	= 32,
+	HASH_FIELD_OVERRIDE	= 64,
 };
 
 enum sort_key_flags {
@@ -1896,6 +1897,11 @@ static struct hash_field *create_hash_field(struct ftrace_event_field *field,
 		goto out;
 	}
 
+	if (flags & HASH_FIELD_OVERRIDE) {
+		hash_field->flags = flags;
+		goto out;
+	}
+
 	if (is_string_field(field)) {
 		flags |= HASH_FIELD_STRING;
 		fn = hash_field_string;
@@ -2166,12 +2172,17 @@ static int create_val_field(struct hash_trigger_data *hash_data,
 				flags |= HASH_FIELD_SYM;
 			else if (!strcmp(field_str, "hex"))
 				flags |= HASH_FIELD_HEX;
+			else if (!strcmp(field_str, "override"))
+				flags |= HASH_FIELD_OVERRIDE;
 		}
 
-		field = trace_find_event_field(file->event_call, field_name);
-		if (!field) {
-			ret = -EINVAL;
-			goto out;
+		if (!(flags & HASH_FIELD_OVERRIDE)) {
+			field = trace_find_event_field(file->event_call,
+						       field_name);
+			if (!field) {
+				ret = -EINVAL;
+				goto out;
+			}
 		}
 
 		hash_data->vals[val] = create_hash_field(field, NULL, flags,
@@ -2454,6 +2465,24 @@ hash_trigger_entry_update(struct hash_trigger_data *hash_data,
 		hash_field = hash_data->vals[i];
 		hash_val = hash_field->fn(hash_field, rec);
 		entry->sums[i] += hash_val;
+	}
+
+	entry->count++;
+}
+
+static void
+early_hash_trigger_entry_update(struct hash_trigger_data *hash_data,
+				struct hash_trigger_entry *entry,
+				u64 *vals)
+{
+	struct hash_field *hash_field;
+	unsigned int i;
+
+	if (vals) {
+		for (i = 0; i < hash_data->n_vals; i++) {
+			hash_field = hash_data->vals[i];
+			entry->sums[i] += vals[i];
+		}
 	}
 
 	entry->count++;
@@ -3001,9 +3030,8 @@ __init int register_trigger_cmds(void)
 
 static char early_hashtriggers_buf[COMMAND_LINE_SIZE] __initdata;
 
-static char fakerec[512];
-
-static void event_early_hash_trigger(struct hash_trigger_data *hash_data)
+static void event_early_hash_trigger(struct hash_trigger_data *hash_data,
+				     u64 *vals)
 {
 	struct hash_trigger_entry *entry;
 	struct hash_field *hash_field;
@@ -3030,23 +3058,23 @@ static void event_early_hash_trigger(struct hash_trigger_data *hash_data)
 	}
 
 	spin_lock_irqsave(&hash_data->lock, flags);
-	entry = hash_trigger_entry_find(hash_data, fakerec, &stacktrace);
+	entry = hash_trigger_entry_find(hash_data, NULL, &stacktrace);
 	spin_unlock_irqrestore(&hash_data->lock, flags);
 
 	if (!entry) {
-		entry = hash_trigger_entry_create(hash_data, fakerec, &stacktrace);
+		entry = hash_trigger_entry_create(hash_data, NULL, &stacktrace);
 		WARN_ON_ONCE(!entry);
 		if (!entry) {
 			spin_unlock_irqrestore(&hash_data->lock, flags);
 			return;
 		}
 		spin_lock_irqsave(&hash_data->lock, flags);
-		hash_trigger_entry_insert(hash_data, entry, fakerec, &stacktrace);
+		hash_trigger_entry_insert(hash_data, entry, NULL, &stacktrace);
 		spin_unlock_irqrestore(&hash_data->lock, flags);
 	}
 
 	spin_lock_irqsave(&hash_data->lock, flags);
-	hash_trigger_entry_update(hash_data, entry, fakerec);
+	early_hash_trigger_entry_update(hash_data, entry, vals);
 	hash_data->total_hits++;
 	spin_unlock_irqrestore(&hash_data->lock, flags);
 }
@@ -3076,10 +3104,14 @@ void early_trace_kmalloc(unsigned long call_site, const void *ptr,
 			 size_t bytes_req, size_t bytes_alloc, gfp_t gfp_flags)
 {
 	struct hash_trigger_data *hash_data;
+	u64 vals[2];
+
+	vals[0] = bytes_req;
+	vals[1] = bytes_alloc;
 
 	hash_data = early_event_enabled("kmem:kmalloc");
 	if (hash_data)
-		event_early_hash_trigger(hash_data);
+		event_early_hash_trigger(hash_data, vals);
 }
 EXPORT_SYMBOL_GPL(early_trace_kmalloc);
 
@@ -3087,10 +3119,14 @@ void early_trace_kmem_cache_alloc(unsigned long call_site, const void *ptr,
 				  size_t bytes_req, size_t bytes_alloc, gfp_t gfp_flags)
 {
 	struct hash_trigger_data *hash_data;
+	u64 vals[2];
+
+	vals[0] = bytes_req;
+	vals[1] = bytes_alloc;
 
 	hash_data = early_event_enabled("kmem:kmem_cache_alloc");
 	if (hash_data)
-		event_early_hash_trigger(hash_data);
+		event_early_hash_trigger(hash_data, vals);
 }
 EXPORT_SYMBOL_GPL(early_trace_kmem_cache_alloc);
 
@@ -3099,10 +3135,14 @@ void early_trace_kmalloc_node(unsigned long call_site, const void *ptr,
 			      gfp_t gfp_flags, int node)
 {
 	struct hash_trigger_data *hash_data;
+	u64 vals[2];
+
+	vals[0] = bytes_req;
+	vals[1] = bytes_alloc;
 
 	hash_data = early_event_enabled("kmem:kmalloc_node");
 	if (hash_data)
-		event_early_hash_trigger(hash_data);
+		event_early_hash_trigger(hash_data, vals);
 }
 EXPORT_SYMBOL_GPL(early_trace_kmalloc_node);
 
@@ -3111,10 +3151,14 @@ void early_trace_kmem_cache_alloc_node(unsigned long call_site, const void *ptr,
 				       gfp_t gfp_flags, int node)
 {
 	struct hash_trigger_data *hash_data;
+	u64 vals[2];
+
+	vals[0] = bytes_req;
+	vals[1] = bytes_alloc;
 
 	hash_data = early_event_enabled("kmem:kmem_cache_alloc_node");
 	if (hash_data)
-		event_early_hash_trigger(hash_data);
+		event_early_hash_trigger(hash_data, vals);
 }
 EXPORT_SYMBOL_GPL(early_trace_kmem_cache_alloc_node);
 
@@ -3126,7 +3170,7 @@ void early_trace_mm_page_alloc(struct page *page, unsigned int order,
 
 	hash_data = early_event_enabled("kmem:mm_page_alloc");
 	if (hash_data)
-		event_early_hash_trigger(hash_data);
+		event_early_hash_trigger(hash_data, NULL);
 }
 EXPORT_SYMBOL_GPL(early_trace_mm_page_alloc);
 
@@ -3138,7 +3182,7 @@ void early_trace_mm_page_alloc_extfrag(struct page *page,
 
 	hash_data = early_event_enabled("kmem:mm_page_alloc_extfrag");
 	if (hash_data)
-		event_early_hash_trigger(hash_data);
+		event_early_hash_trigger(hash_data, NULL);
 }
 EXPORT_SYMBOL_GPL(early_trace_mm_page_alloc_extfrag);
 
@@ -3149,7 +3193,7 @@ void early_trace_mm_page_alloc_zone_locked(struct page *page,
 
 	hash_data = early_event_enabled("kmem:mm_page_alloc_zone_locked");
 	if (hash_data)
-		event_early_hash_trigger(hash_data);
+		event_early_hash_trigger(hash_data, NULL);
 }
 EXPORT_SYMBOL_GPL(early_trace_mm_page_alloc_zone_locked);
 
