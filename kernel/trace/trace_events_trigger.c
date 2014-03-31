@@ -1436,11 +1436,14 @@ struct hash_field;
 
 typedef u64 (*hash_field_fn_t) (struct hash_field *field, void *event);
 
+#define MAX_FIELD_NAME_LEN	128
+
 struct hash_field {
 	struct ftrace_event_field	*field;
 	struct ftrace_event_field	*aux_field;
 	hash_field_fn_t			fn;
 	unsigned long			flags;
+	char				name[MAX_FIELD_NAME_LEN]; /* if NULL field */
 };
 
 static u64 hash_field_none(struct hash_field *field, void *event)
@@ -1482,7 +1485,7 @@ DEFINE_HASH_FIELD_FN(u16);
 DEFINE_HASH_FIELD_FN(s8);
 DEFINE_HASH_FIELD_FN(u8);
 
-#define HASH_TRIGGER_BYTES	(2621440 * 2)
+#define HASH_TRIGGER_BYTES	(2621440)
 
 /* enough memory for one hashtrigger of bits 12 */
 static char hashtrigger_bytes[HASH_TRIGGER_BYTES];
@@ -1881,6 +1884,7 @@ static void destroy_hash_field(struct hash_field *hash_field,
 
 static struct hash_field *create_hash_field(struct ftrace_event_field *field,
 					    struct ftrace_event_field *aux_field,
+					    char *field_name, /* if !field */
 					    unsigned long flags,
 					    hash_data_alloc_fn_t alloc_fn,
 					    hash_data_free_fn_t free_fn)
@@ -1899,6 +1903,7 @@ static struct hash_field *create_hash_field(struct ftrace_event_field *field,
 
 	if (flags & HASH_FIELD_OVERRIDE) {
 		hash_field->flags = flags;
+		strcpy(hash_field->name, field_name);
 		goto out;
 	}
 
@@ -2112,7 +2117,7 @@ static int create_key_field(struct hash_trigger_data *hash_data,
 		}
 	}
 
-	hash_data->keys[key] = create_hash_field(field, NULL, flags,
+	hash_data->keys[key] = create_hash_field(field, NULL, NULL, flags,
 						 alloc_fn, free_fn);
 	if (!hash_data->keys[key]) {
 		ret = -ENOMEM;
@@ -2156,7 +2161,7 @@ static int create_val_field(struct hash_trigger_data *hash_data,
 			goto out;
 		}
 
-		hash_data->vals[val] = create_hash_field(m_field, s_field,
+		hash_data->vals[val] = create_hash_field(m_field, s_field, NULL,
 							 flags, alloc_fn,
 							 free_fn);
 		if (!hash_data->vals[val]) {
@@ -2185,8 +2190,8 @@ static int create_val_field(struct hash_trigger_data *hash_data,
 			}
 		}
 
-		hash_data->vals[val] = create_hash_field(field, NULL, flags,
-							 alloc_fn, free_fn);
+		hash_data->vals[val] = create_hash_field(field, NULL, field_name,
+							 flags, alloc_fn, free_fn);
 		if (!hash_data->vals[val]) {
 			ret = -ENOMEM;
 			goto out;
@@ -2567,12 +2572,12 @@ hash_trigger_entry_print(struct seq_file *m,
 			kallsyms_lookup(entry->key_parts[i].var.val_u64,
 					NULL, NULL, NULL, str);
 			seq_printf(m, "%s:[%llx] %s",
-				   hash_data->keys[i]->field->name,
+				   hash_data->vals[i]->field->name,
 				   entry->key_parts[i].var.val_u64,
 				   str);
 		} else if (entry->key_parts[i].flags & HASH_FIELD_HEX) {
 			seq_printf(m, "%s:%llx",
-				   hash_data->keys[i]->field->name,
+				   hash_data->vals[i]->field->name,
 				   entry->key_parts[i].var.val_u64);
 		} else if (entry->key_parts[i].flags & HASH_FIELD_STACKTRACE) {
 			seq_printf(m, "stacktrace:\n");
@@ -2580,11 +2585,11 @@ hash_trigger_entry_print(struct seq_file *m,
 				      entry->key_parts[i].var.val_stacktrace);
 		} else if (entry->key_parts[i].flags & HASH_FIELD_STRING) {
 			seq_printf(m, "%s:%s",
-				   hash_data->keys[i]->field->name,
+				   hash_data->vals[i]->field->name,
 				   entry->key_parts[i].var.val_string);
 		} else if (entry->key_parts[i].flags & HASH_FIELD_EXECNAME) {
 			seq_printf(m, "%s:%s[%llu]",
-				   hash_data->keys[i]->field->name,
+				   hash_data->vals[i]->field->name,
 				   entry->comm,
 				   entry->key_parts[i].var.val_u64);
 		} else if (entry->key_parts[i].flags & HASH_FIELD_SYSCALL) {
@@ -2594,11 +2599,11 @@ hash_trigger_entry_print(struct seq_file *m,
 			if (!syscall_name)
 				syscall_name = "unknown_syscall";
 			seq_printf(m, "%s:%s",
-				   hash_data->keys[i]->field->name,
+				   hash_data->vals[i]->field->name,
 				   syscall_name);
 		} else {
 			seq_printf(m, "%s:%llu",
-				   hash_data->keys[i]->field->name,
+				   hash_data->vals[i]->field->name,
 				   entry->key_parts[i].var.val_u64);
 		}
 	}
@@ -2615,8 +2620,11 @@ hash_trigger_entry_print(struct seq_file *m,
 				   entry->sums[i]);
 			continue;
 		}
+
 		seq_printf(m, " %s:%llu",
-			   hash_data->vals[i]->field->name,
+			   hash_data->vals[i]->field ?
+			   hash_data->vals[i]->field->name :
+			   hash_data->vals[i]->name,
 			   entry->sums[i]);
 	}
 	seq_printf(m, "\n");
@@ -2727,6 +2735,7 @@ print_entries_sorted(struct seq_file *m, struct hash_trigger_data *hash_data)
 	struct hash_trigger_entry **entries;
 	struct hash_trigger_entry *entry;
 	unsigned int entries_size;
+
 	unsigned int i = 0, j = 0;
 
 	entries_size = sizeof(entry) * hash_data->total_entries;
@@ -3247,17 +3256,29 @@ static __init int setup_early_hashtrigger(char *hashtrigger_str)
 	if (!vals) // zzzz for normal case too?
 		return -EINVAL;
 
-	initonly = strsep(&trigger, ":");
-	if (!strcmp(initonly, "initonly"))
-		early_trace_initonly = true;
-
 	if (trigger) {
 		sort_keys = strsep(&trigger, ":");
-		if (!sort_keys) // zzzz for normal case too?
+		if (!strchr(sort_keys, '=')) {
+			initonly = sort_keys;
+			sort_keys = NULL;
+			if (!strcmp(initonly, "initonly"))
+				early_trace_initonly = true;
+			else
+				/* not sort key or initonly */
+				return -EINVAL;
+		}
+	}
+
+	if (sort_keys && trigger) {
+		initonly = strsep(&trigger, ":");
+		if (!strcmp(initonly, "initonly"))
+			early_trace_initonly = true;
+		else
+			/* not expected initonly */
 			return -EINVAL;
 	}
 
-	hash_data = create_hash_data(12 /* 2048 * 2 */, keys, vals, sort_keys,
+	hash_data = create_hash_data(11 /* 2048 */, keys, vals, sort_keys,
 				     NULL, hash_data_bootmem_alloc,
 				     hash_data_bootmem_free,
 				     hash_data_bootmem_strdup,
