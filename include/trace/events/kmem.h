@@ -50,9 +50,6 @@ DEFINE_EVENT(kmem_alloc, kmalloc,
 	TP_ARGS(call_site, ptr, bytes_req, bytes_alloc, gfp_flags)
 );
 
-extern void early_trace_kmalloc(unsigned long call_site, const void *ptr,
-				size_t bytes_req, size_t bytes_alloc, gfp_t gfp_flags);
-
 DEFINE_EVENT(kmem_alloc, kmem_cache_alloc,
 
 	TP_PROTO(unsigned long call_site, const void *ptr,
@@ -60,9 +57,6 @@ DEFINE_EVENT(kmem_alloc, kmem_cache_alloc,
 
 	TP_ARGS(call_site, ptr, bytes_req, bytes_alloc, gfp_flags)
 );
-
-extern void early_trace_kmem_cache_alloc(unsigned long call_site, const void *ptr,
-					 size_t bytes_req, size_t bytes_alloc, gfp_t gfp_flags);
 
 DECLARE_EVENT_CLASS(kmem_alloc_node,
 
@@ -111,10 +105,6 @@ DEFINE_EVENT(kmem_alloc_node, kmalloc_node,
 	TP_ARGS(call_site, ptr, bytes_req, bytes_alloc, gfp_flags, node)
 );
 
-extern void early_trace_kmalloc_node(unsigned long call_site, const void *ptr,
-				     size_t bytes_req, size_t bytes_alloc,
-				     gfp_t gfp_flags, int node);
-
 DEFINE_EVENT(kmem_alloc_node, kmem_cache_alloc_node,
 
 	TP_PROTO(unsigned long call_site, const void *ptr,
@@ -123,10 +113,6 @@ DEFINE_EVENT(kmem_alloc_node, kmem_cache_alloc_node,
 
 	TP_ARGS(call_site, ptr, bytes_req, bytes_alloc, gfp_flags, node)
 );
-
-extern void early_trace_kmem_cache_alloc_node(unsigned long call_site, const void *ptr,
-					      size_t bytes_req, size_t bytes_alloc,
-					      gfp_t gfp_flags, int node);
 
 DECLARE_EVENT_CLASS(kmem_free,
 
@@ -234,9 +220,6 @@ TRACE_EVENT(mm_page_alloc,
 		show_gfp_flags(__entry->gfp_flags))
 );
 
-extern void early_trace_mm_page_alloc(struct page *page, unsigned int order,
-				      gfp_t gfp_flags, int migratetype);
-
 DECLARE_EVENT_CLASS(mm_page,
 
 	TP_PROTO(struct page *page, unsigned int order, int migratetype),
@@ -269,9 +252,6 @@ DEFINE_EVENT(mm_page, mm_page_alloc_zone_locked,
 
 	TP_ARGS(page, order, migratetype)
 );
-
-extern void early_trace_mm_page_alloc_zone_locked(struct page *page,
-						  unsigned int order, int migratetype);
 
 DEFINE_EVENT_PRINT(mm_page, mm_page_pcpu_drain,
 
@@ -323,10 +303,6 @@ TRACE_EVENT(mm_page_alloc_extfrag,
 		__entry->fallback_order < pageblock_order,
 		__entry->change_ownership)
 );
-
-extern void early_trace_mm_page_alloc_extfrag(struct page *page,
-					      int alloc_order, int fallback_order,
-					      int alloc_migratetype, int fallback_migratetype, int new_migratetype);
 
 #endif /* _TRACE_KMEM_H */
 

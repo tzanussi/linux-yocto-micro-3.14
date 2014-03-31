@@ -649,8 +649,90 @@ extern void ftrace_init(void);
 static inline void ftrace_init(void) { }
 #endif
 
+#ifdef CONFIG_FTRACE
 extern void ftrace_set_early_tracing_done(void);
 extern bool ftrace_early_tracing_done(void);
+#else
+static inline void ftrace_set_early_tracing_done(void) {}
+static inline bool ftrace_early_tracing_done(void) { return true; }
+#endif
+
+#ifdef CONFIG_FTRACE
+extern void early_trace_kmalloc(unsigned long call_site, const void *ptr,
+				size_t bytes_req, size_t bytes_alloc, gfp_t gfp_flags);
+#else
+static inline void early_trace_kmalloc(unsigned long call_site, const void *ptr,
+			 size_t bytes_req, size_t bytes_alloc, gfp_t gfp_flags)
+{
+}
+#endif
+
+#ifdef CONFIG_FTRACE
+extern void early_trace_kmem_cache_alloc(unsigned long call_site, const void *ptr,
+					 size_t bytes_req, size_t bytes_alloc, gfp_t gfp_flags);
+#else
+static inline void early_trace_kmem_cache_alloc(unsigned long call_site, const void *ptr,
+				  size_t bytes_req, size_t bytes_alloc, gfp_t gfp_flags)
+{
+}
+#endif
+
+#ifdef CONFIG_FTRACE
+extern void early_trace_kmalloc_node(unsigned long call_site, const void *ptr,
+				     size_t bytes_req, size_t bytes_alloc,
+				     gfp_t gfp_flags, int node);
+#else
+static inline void early_trace_kmalloc_node(unsigned long call_site, const void *ptr,
+			      size_t bytes_req, size_t bytes_alloc,
+			      gfp_t gfp_flags, int node)
+{
+}
+#endif
+
+#ifdef CONFIG_FTRACE
+extern void early_trace_kmem_cache_alloc_node(unsigned long call_site, const void *ptr,
+					      size_t bytes_req, size_t bytes_alloc,
+					      gfp_t gfp_flags, int node);
+#else
+static inline void early_trace_kmem_cache_alloc_node(unsigned long call_site, const void *ptr,
+				       size_t bytes_req, size_t bytes_alloc,
+				       gfp_t gfp_flags, int node)
+{
+}
+#endif
+
+#ifdef CONFIG_FTRACE
+extern void early_trace_mm_page_alloc(struct page *page, unsigned int order,
+				      gfp_t gfp_flags, int migratetype);
+#else
+static inline void early_trace_mm_page_alloc(struct page *page, unsigned int order,
+			       gfp_t gfp_flags, int migratetype)
+{
+}
+#endif
+
+#ifdef CONFIG_FTRACE
+extern void early_trace_mm_page_alloc_zone_locked(struct page *page,
+						  unsigned int order, int migratetype);
+#else
+static inline void early_trace_mm_page_alloc_zone_locked(struct page *page,
+					   unsigned int order, int migratetype)
+{
+}
+#endif
+
+#ifdef CONFIG_FTRACE
+extern void early_trace_mm_page_alloc_extfrag(struct page *page,
+					      int alloc_order, int fallback_order,
+					      int alloc_migratetype, int fallback_migratetype, int new_migratetype);
+#else
+static inline void early_trace_mm_page_alloc_extfrag(struct page *page,
+				       int alloc_order, int fallback_order,
+				       int alloc_migratetype, int fallback_migratetype, int new_migratetype)
+{
+}
+#endif
+
 
 /*
  * Structure that defines an entry function trace.

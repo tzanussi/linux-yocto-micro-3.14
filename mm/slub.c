@@ -35,6 +35,7 @@
 #include <linux/memcontrol.h>
 
 #include <trace/events/kmem.h>
+#include <linux/ftrace.h>
 
 #include "internal.h"
 
