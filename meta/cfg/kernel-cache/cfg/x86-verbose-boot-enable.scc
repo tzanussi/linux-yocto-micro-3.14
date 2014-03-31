@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Enable verbose boot"
+define KFEATURE_COMPATIBILITY arch
+
+kconf non-hardware x86-verbose-boot-enable.cfg
