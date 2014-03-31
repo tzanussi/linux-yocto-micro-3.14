@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Enable PRINTK support"
+define KFEATURE_COMPATIBILITY arch
+
+kconf non-hardware printk-enable.cfg
