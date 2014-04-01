@@ -2572,12 +2572,12 @@ hash_trigger_entry_print(struct seq_file *m,
 			kallsyms_lookup(entry->key_parts[i].var.val_u64,
 					NULL, NULL, NULL, str);
 			seq_printf(m, "%s:[%llx] %s",
-				   hash_data->vals[i]->field->name,
+				   hash_data->keys[i]->field->name,
 				   entry->key_parts[i].var.val_u64,
 				   str);
 		} else if (entry->key_parts[i].flags & HASH_FIELD_HEX) {
 			seq_printf(m, "%s:%llx",
-				   hash_data->vals[i]->field->name,
+				   hash_data->keys[i]->field->name,
 				   entry->key_parts[i].var.val_u64);
 		} else if (entry->key_parts[i].flags & HASH_FIELD_STACKTRACE) {
 			seq_printf(m, "stacktrace:\n");
@@ -2585,11 +2585,11 @@ hash_trigger_entry_print(struct seq_file *m,
 				      entry->key_parts[i].var.val_stacktrace);
 		} else if (entry->key_parts[i].flags & HASH_FIELD_STRING) {
 			seq_printf(m, "%s:%s",
-				   hash_data->vals[i]->field->name,
+				   hash_data->keys[i]->field->name,
 				   entry->key_parts[i].var.val_string);
 		} else if (entry->key_parts[i].flags & HASH_FIELD_EXECNAME) {
 			seq_printf(m, "%s:%s[%llu]",
-				   hash_data->vals[i]->field->name,
+				   hash_data->keys[i]->field->name,
 				   entry->comm,
 				   entry->key_parts[i].var.val_u64);
 		} else if (entry->key_parts[i].flags & HASH_FIELD_SYSCALL) {
@@ -2599,11 +2599,11 @@ hash_trigger_entry_print(struct seq_file *m,
 			if (!syscall_name)
 				syscall_name = "unknown_syscall";
 			seq_printf(m, "%s:%s",
-				   hash_data->vals[i]->field->name,
+				   hash_data->keys[i]->field->name,
 				   syscall_name);
 		} else {
 			seq_printf(m, "%s:%llu",
-				   hash_data->vals[i]->field->name,
+				   hash_data->keys[i]->field->name,
 				   entry->key_parts[i].var.val_u64);
 		}
 	}
