@@ -36,6 +36,7 @@
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/pagemap.h>
+#include <linux/ftrace.h>
 
 /* How many pages do we try to swap or page in/out together? */
 int page_cluster;
@@ -470,6 +471,7 @@ static void __activate_page(struct page *page, struct lruvec *lruvec,
 		lru += LRU_ACTIVE;
 		add_page_to_lru_list(page, lruvec, lru);
 		trace_mm_lru_activate(page, page_to_pfn(page));
+		early_trace_mm_lru_activate(page, page_to_pfn(page));
 
 		__count_vm_event(PGACTIVATE);
 		update_page_reclaim_stat(lruvec, file, 1);
@@ -935,6 +937,7 @@ static void __pagevec_lru_add_fn(struct page *page, struct lruvec *lruvec,
 	add_page_to_lru_list(page, lruvec, lru);
 	update_page_reclaim_stat(lruvec, file, active);
 	trace_mm_lru_insertion(page, page_to_pfn(page), lru, trace_pagemap_flags(page));
+	early_trace_mm_lru_insertion(page, page_to_pfn(page), lru, trace_pagemap_flags(page));
 }
 
 /*

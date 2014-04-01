@@ -733,6 +733,39 @@ static inline void early_trace_mm_page_alloc_extfrag(struct page *page,
 }
 #endif
 
+#ifdef CONFIG_FTRACE
+extern void early_trace_mm_lru_insertion(struct page *page, unsigned long pfn,
+					 int lru, unsigned long flags);
+#else
+static inline void early_trace_mm_lru_insertion(struct page *page, unsigned long pfn,
+						int lru, unsigned long flags)
+{
+}
+#endif
+
+#ifdef CONFIG_FTRACE
+extern void early_trace_mm_lru_activate(struct page *page, unsigned long pfn);
+#else
+static inline void early_trace_mm_lru_activate(struct page *page, unsigned long pfn)
+{
+}
+#endif
+
+#ifdef CONFIG_FTRACE
+extern void early_trace_mm_filemap_add_to_page_cache(struct page *page);
+#else
+static inline void early_trace_mm_filemap_add_to_page_cache(struct page *page)
+{
+}
+#endif
+
+#ifdef CONFIG_FTRACE
+extern void early_trace_mm_filemap_delete_from_page_cache(struct page *page);
+#else
+static inline void early_trace_mm_filemap_delete_from_page_cache(struct page *page)
+{
+}
+#endif
 
 /*
  * Structure that defines an entry function trace.

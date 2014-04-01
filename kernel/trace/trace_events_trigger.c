@@ -3211,6 +3211,47 @@ void early_trace_mm_page_alloc_zone_locked(struct page *page,
 }
 EXPORT_SYMBOL_GPL(early_trace_mm_page_alloc_zone_locked);
 
+void early_trace_mm_lru_insertion(struct page *page, unsigned long pfn,
+				  int lru, unsigned long flags)
+{
+	struct hash_trigger_data *hash_data;
+
+	hash_data = early_event_enabled("pagemap:mm_lru_insertion");
+	if (hash_data)
+		event_early_hash_trigger(hash_data, NULL);
+}
+EXPORT_SYMBOL_GPL(early_trace_mm_lru_insertion);
+
+void early_trace_mm_lru_activate(struct page *page, unsigned long pfn)
+{
+	struct hash_trigger_data *hash_data;
+
+	hash_data = early_event_enabled("pagemap:mm_lru_activate");
+	if (hash_data)
+		event_early_hash_trigger(hash_data, NULL);
+}
+EXPORT_SYMBOL_GPL(early_trace_mm_lru_activate);
+
+extern void early_trace_mm_filemap_add_to_page_cache(struct page *page)
+{
+	struct hash_trigger_data *hash_data;
+
+	hash_data = early_event_enabled("filemap:mm_filemap_add_to_page_cache");
+	if (hash_data)
+		event_early_hash_trigger(hash_data, NULL);
+}
+EXPORT_SYMBOL_GPL(early_trace_mm_filemap_add_to_page_cache);
+
+void early_trace_mm_filemap_delete_from_page_cache(struct page *page)
+{
+	struct hash_trigger_data *hash_data;
+
+	hash_data = early_event_enabled("filemap:mm_filemap_delete_from_page_cache");
+	if (hash_data)
+		event_early_hash_trigger(hash_data, NULL);
+}
+EXPORT_SYMBOL_GPL(early_trace_mm_filemap_delete_from_page_cache);
+
 /*
  * For now, we only allow subsys:event:hash:stacktrace:hitcount, which
  * allows us to use NULL event_files.  The source will manually do
