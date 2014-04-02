@@ -69,6 +69,7 @@
 #include <linux/kmemleak.h>
 
 #include <trace/events/kmem.h>
+#include <linux/ftrace.h>
 
 #include <linux/atomic.h>
 
