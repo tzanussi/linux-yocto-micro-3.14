@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Disable IPv6 options"
+define KFEATURE_COMPATIBILITY all
+
+kconf non-hardware ipv6-disable.cfg
