@@ -2522,7 +2522,7 @@ void pcpu_free_vm_areas(struct vm_struct **vms, int nr_vms)
 }
 #endif	/* CONFIG_SMP */
 
-#ifdef CONFIG_PROC_FS
+#ifdef CONFIG_PROC_FS_MIN
 static void *s_start(struct seq_file *m, loff_t *pos)
 	__acquires(&vmap_area_lock)
 {

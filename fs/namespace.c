@@ -1094,7 +1094,7 @@ void replace_mount_options(struct super_block *sb, char *options)
 }
 EXPORT_SYMBOL(replace_mount_options);
 
-#ifdef CONFIG_PROC_FS
+#ifdef CONFIG_PROC_FS_MIN
 /* iterator; we want it to have access to namespace_sem, thus here... */
 static void *m_start(struct seq_file *m, loff_t *pos)
 {
@@ -1129,7 +1129,7 @@ const struct seq_operations mounts_op = {
 	.stop	= m_stop,
 	.show	= m_show,
 };
-#endif  /* CONFIG_PROC_FS */
+#endif  /* CONFIG_PROC_FS_MIN */
 
 /**
  * may_umount_tree - check if a mount tree is busy

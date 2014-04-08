@@ -64,7 +64,7 @@ struct irq_desc {
 	unsigned long		threads_oneshot;
 	atomic_t		threads_active;
 	wait_queue_head_t       wait_for_threads;
-#ifdef CONFIG_PROC_FS
+#ifdef CONFIG_PROC_FS_MIN
 	struct proc_dir_entry	*dir;
 #endif
 	int			parent_irq;

@@ -19,7 +19,7 @@ else
 obj-y +=	no-block.o
 endif
 
-obj-$(CONFIG_PROC_FS) += proc_namespace.o
+obj-$(CONFIG_PROC_FS_MIN) += proc_namespace.o
 
 obj-$(CONFIG_BLK_DEV_INTEGRITY) += bio-integrity.o
 obj-y				+= notify/
@@ -51,7 +51,7 @@ obj-$(CONFIG_FHANDLE)		+= fhandle.o
 
 obj-y				+= quota/
 
-obj-$(CONFIG_PROC_FS)		+= proc/
+obj-$(CONFIG_PROC_FS_MIN)	+= proc/
 obj-$(CONFIG_SYSFS)		+= sysfs/ kernfs/
 obj-$(CONFIG_CONFIGFS_FS)	+= configfs/
 obj-y				+= devpts/

@@ -688,7 +688,7 @@ static inline void tty_wait_until_sent_from_close(struct tty_struct *tty,
 			schedule();					\
 			tty_lock(tty))
 
-#ifdef CONFIG_PROC_FS
+#ifdef CONFIG_PROC_FS_MIN
 extern void proc_tty_register_driver(struct tty_driver *);
 extern void proc_tty_unregister_driver(struct tty_driver *);
 #else

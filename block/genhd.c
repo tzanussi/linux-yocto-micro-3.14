@@ -252,7 +252,7 @@ static inline int major_to_index(unsigned major)
 	return major % BLKDEV_MAJOR_HASH_SIZE;
 }
 
-#ifdef CONFIG_PROC_FS
+#ifdef CONFIG_PROC_FS_MIN
 void blkdev_show(struct seq_file *seqf, off_t offset)
 {
 	struct blk_major_name *dp;
@@ -264,7 +264,7 @@ void blkdev_show(struct seq_file *seqf, off_t offset)
 		mutex_unlock(&block_class_lock);
 	}
 }
-#endif /* CONFIG_PROC_FS */
+#endif /* CONFIG_PROC_FS_MIN */
 
 /**
  * register_blkdev - register a new block device

@@ -217,7 +217,7 @@ int __init get_filesystem_list(char *buf)
 	return len;
 }
 
-#ifdef CONFIG_PROC_FS
+#ifdef CONFIG_PROC_FS_MIN
 static int filesystems_proc_show(struct seq_file *m, void *v)
 {
 	struct file_system_type * tmp;

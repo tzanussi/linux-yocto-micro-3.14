@@ -1,5 +1,6 @@
 config PROC_FS
 	bool "/proc file system support" if EXPERT
+	select PROC_FS_MIN
 	default y
 	help
 	  This is a virtual file system providing information about the status
@@ -27,6 +28,18 @@ config PROC_FS
 
 	  This option will enlarge your kernel by about 67 KB. Several
 	  programs depend on this, so everyone should say Y here.
+
+config PROC_FS_MIN
+	bool "minimal /proc file system support" if EXPERT
+	default n
+	help
+	  This is a minimal subset of proc, basically what's needed to
+	  boot.
+
+	  This option will enlarge your kernel by about 60 KB, in
+	  comparison to full PROC_FS of 170 KB.  PROC_FS selects this,
+	  so unless you know what you're doing, you can safely ignore
+	  this.
 
 config PROC_KCORE
 	bool "/proc/kcore support" if !ARM

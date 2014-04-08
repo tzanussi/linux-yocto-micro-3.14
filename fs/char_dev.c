@@ -64,7 +64,7 @@ static inline int major_to_index(unsigned major)
 	return major % CHRDEV_MAJOR_HASH_SIZE;
 }
 
-#ifdef CONFIG_PROC_FS
+#ifdef CONFIG_PROC_FS_MIN
 
 void chrdev_show(struct seq_file *f, off_t offset)
 {
@@ -78,7 +78,7 @@ void chrdev_show(struct seq_file *f, off_t offset)
 	}
 }
 
-#endif /* CONFIG_PROC_FS */
+#endif /* CONFIG_PROC_FS_MIN */
 
 /*
  * Register a single major with a specified minor range.

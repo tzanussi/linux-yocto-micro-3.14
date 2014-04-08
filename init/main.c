@@ -629,7 +629,7 @@ asmlinkage void __init start_kernel(void)
 	signals_init();
 	/* rootfs populating might need page-writeback */
 	page_writeback_init();
-#ifdef CONFIG_PROC_FS
+#ifdef CONFIG_PROC_FS_MIN
 	proc_root_init();
 #endif
 	cgroup_init();
