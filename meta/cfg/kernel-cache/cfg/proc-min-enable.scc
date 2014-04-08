@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Enable minimal proc support"
+define KFEATURE_COMPATIBILITY arch
+
+kconf non-hardware proc-min-enable.cfg
