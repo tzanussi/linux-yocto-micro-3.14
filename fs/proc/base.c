@@ -2575,6 +2575,7 @@ static const struct file_operations proc_task_operations;
 static const struct inode_operations proc_task_inode_operations;
 
 static const struct pid_entry tgid_base_stuff[] = {
+#ifdef CONFIG_PROC_FS
 	DIR("task",       S_IRUGO|S_IXUGO, proc_task_inode_operations, proc_task_operations),
 	DIR("fd",         S_IRUSR|S_IXUSR, proc_fd_inode_operations, proc_fd_operations),
 #ifdef CONFIG_CHECKPOINT_RESTORE
@@ -2611,7 +2612,9 @@ static const struct pid_entry tgid_base_stuff[] = {
 	LNK("cwd",        proc_cwd_link),
 	LNK("root",       proc_root_link),
 	LNK("exe",        proc_exe_link),
+#endif /* CONFIG_PROC_FS */
 	REG("mounts",     S_IRUGO, proc_mounts_operations),
+#ifdef CONFIG_PROC_FS
 	REG("mountinfo",  S_IRUGO, proc_mountinfo_operations),
 	REG("mountstats", S_IRUSR, proc_mountstats_operations),
 #ifdef CONFIG_PROC_PAGE_MONITOR
@@ -2667,6 +2670,7 @@ static const struct pid_entry tgid_base_stuff[] = {
 #ifdef CONFIG_CHECKPOINT_RESTORE
 	REG("timers",	  S_IRUGO, proc_timers_operations),
 #endif
+#endif /* CONFIG_PROC_FS */
 };
 
 static int proc_tgid_base_readdir(struct file *file, struct dir_context *ctx)
