@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Disable sysfs support"
+define KFEATURE_COMPATIBILITY arch
+
+kconf non-hardware sysfs-disable.cfg
