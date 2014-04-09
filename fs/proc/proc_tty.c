@@ -15,6 +15,8 @@
 #include <linux/seq_file.h>
 #include <linux/bitops.h>
 
+#ifdef CONFIG_PROC_FS
+
 /*
  * The /proc/tty directory inodes...
  */
@@ -187,3 +189,5 @@ void __init proc_tty_init(void)
 	proc_create("tty/ldiscs", 0, NULL, &tty_ldiscs_proc_fops);
 	proc_create("tty/drivers", 0, NULL, &proc_tty_drivers_operations);
 }
+
+#endif  /* CONFIG_PROC_FS */

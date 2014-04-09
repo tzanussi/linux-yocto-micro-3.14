@@ -20,6 +20,7 @@
 
 #include <asm/uaccess.h>
 
+#ifdef CONFIG_PROC_FS
 
 struct timer_list_iter {
 	int cpu;
@@ -368,3 +369,5 @@ static int __init init_timer_list_procfs(void)
 	return 0;
 }
 __initcall(init_timer_list_procfs);
+
+#endif /* CONFIG_PROC_FS */
