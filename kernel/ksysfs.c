@@ -157,26 +157,6 @@ static ssize_t rcu_expedited_store(struct kobject *kobj,
 }
 KERNEL_ATTR_RW(rcu_expedited);
 
-/* virt kmem info */
-static ssize_t virt_kmem_show(struct kobject *kobj,
-			      struct kobj_attribute *attr, char *buf)
-{
-	return sprintf(buf, "virtual kernel memory layout:\n"
-		"      .init : 0x%08lx - 0x%08lx   (%4ld kB)\n"
-		"      .data : 0x%08lx - 0x%08lx   (%4ld kB)\n"
-		"      .text : 0x%08lx - 0x%08lx   (%4ld kB)\n",
-		(unsigned long)&__init_begin, (unsigned long)&__init_end,
-		((unsigned long)&__init_end -
-		 (unsigned long)&__init_begin) >> 10,
-
-		(unsigned long)&_etext, (unsigned long)&_edata,
-		((unsigned long)&_edata - (unsigned long)&_etext) >> 10,
-
-		(unsigned long)&_text, (unsigned long)&_etext,
-		((unsigned long)&_etext - (unsigned long)&_text) >> 10);
-}
-KERNEL_ATTR_RO(virt_kmem);
-
 /*
  * Make /sys/kernel/notes give the raw contents of our kernel .notes section.
  */
@@ -217,7 +197,6 @@ static struct attribute * kernel_attrs[] = {
 	&vmcoreinfo_attr.attr,
 #endif
 	&rcu_expedited_attr.attr,
-	&virt_kmem_attr.attr,
 	NULL
 };
 

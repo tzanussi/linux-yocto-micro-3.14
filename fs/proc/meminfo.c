@@ -223,3 +223,42 @@ static int __init proc_meminfo_init(void)
 	return 0;
 }
 fs_initcall(proc_meminfo_init);
+
+/* virt kmem info */
+static int virt_kmem_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "virtual kernel memory layout:\n"
+		   "      .init : 0x%08lx - 0x%08lx   (%4ld kB)\n"
+		   "      .data : 0x%08lx - 0x%08lx   (%4ld kB)\n"
+		   "      .text : 0x%08lx - 0x%08lx   (%4ld kB)\n",
+		   (unsigned long)&__init_begin, (unsigned long)&__init_end,
+		   ((unsigned long)&__init_end -
+		    (unsigned long)&__init_begin) >> 10,
+
+		   (unsigned long)&_etext, (unsigned long)&_edata,
+		   ((unsigned long)&_edata - (unsigned long)&_etext) >> 10,
+
+		   (unsigned long)&_text, (unsigned long)&_etext,
+		   ((unsigned long)&_etext - (unsigned long)&_text) >> 10);
+
+	return 0;
+}
+
+static int virt_kmem_proc_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, virt_kmem_proc_show, NULL);
+}
+
+static const struct file_operations virt_kmem_proc_fops = {
+	.open		= virt_kmem_proc_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+};
+
+static int __init proc_virt_kmem_init(void)
+{
+	proc_create("virt_kmem", 0, NULL, &virt_kmem_proc_fops);
+	return 0;
+}
+fs_initcall(proc_virt_kmem_init);
