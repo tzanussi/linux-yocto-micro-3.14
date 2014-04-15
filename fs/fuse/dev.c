@@ -1296,6 +1296,8 @@ static ssize_t fuse_dev_read(struct kiocb *iocb, const struct iovec *iov,
 	return fuse_dev_do_read(fc, file, &cs, iov_length(iov, nr_segs));
 }
 
+#ifdef CONFIG_SPLICE
+
 static ssize_t fuse_dev_splice_read(struct file *in, loff_t *ppos,
 				    struct pipe_inode_info *pipe,
 				    size_t len, unsigned int flags)
@@ -1373,6 +1375,8 @@ out:
 	kfree(bufs);
 	return ret;
 }
+
+#endif /* CONFIG_SPLICE */
 
 static int fuse_notify_poll(struct fuse_conn *fc, unsigned int size,
 			    struct fuse_copy_state *cs)
@@ -1899,6 +1903,8 @@ static ssize_t fuse_dev_write(struct kiocb *iocb, const struct iovec *iov,
 	return fuse_dev_do_write(fc, &cs, iov_length(iov, nr_segs));
 }
 
+#ifdef CONFIG_SPLICE
+
 static ssize_t fuse_dev_splice_write(struct pipe_inode_info *pipe,
 				     struct file *out, loff_t *ppos,
 				     size_t len, unsigned int flags)
@@ -1976,6 +1982,8 @@ out:
 	kfree(bufs);
 	return ret;
 }
+
+#endif /* CONFIG_SPLICE */
 
 static unsigned fuse_dev_poll(struct file *file, poll_table *wait)
 {
@@ -2149,10 +2157,14 @@ const struct file_operations fuse_dev_operations = {
 	.llseek		= no_llseek,
 	.read		= do_sync_read,
 	.aio_read	= fuse_dev_read,
+#ifdef CONFIG_SPLICE
 	.splice_read	= fuse_dev_splice_read,
+#endif /* CONFIG_SPLICE */
 	.write		= do_sync_write,
 	.aio_write	= fuse_dev_write,
+#ifdef CONFIG_SPLICE
 	.splice_write	= fuse_dev_splice_write,
+#endif /* CONFIG_SPLICE */
 	.poll		= fuse_dev_poll,
 	.release	= fuse_dev_release,
 	.fasync		= fuse_dev_fasync,

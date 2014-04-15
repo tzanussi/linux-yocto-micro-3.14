@@ -1641,6 +1641,8 @@ fault:
 }
 EXPORT_SYMBOL(skb_copy_bits);
 
+#ifdef CONFIG_SPLICE
+
 /*
  * Callback from splice_to_pipe(), if we need to release some pages
  * at the end of the spd in case we error'ed out in filling the pipe.
@@ -1843,6 +1845,8 @@ done:
 
 	return ret;
 }
+
+#endif /* CONFIG_SPLICE */
 
 /**
  *	skb_store_bits - store bits from kernel buffer to skb

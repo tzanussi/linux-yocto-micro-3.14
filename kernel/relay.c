@@ -1174,6 +1174,8 @@ static ssize_t relay_file_read(struct file *filp,
 	return relay_file_read_subbufs(filp, ppos, subbuf_read_actor, &desc);
 }
 
+#ifdef CONFIG_SPLICE
+
 static void relay_consume_bytes(struct rchan_buf *rbuf, int bytes_consumed)
 {
 	rbuf->bytes_consumed += bytes_consumed;
@@ -1341,6 +1343,8 @@ static ssize_t relay_file_splice_read(struct file *in,
 	return ret;
 }
 
+#endif /* CONFIG_SPLICE */
+
 const struct file_operations relay_file_operations = {
 	.open		= relay_file_open,
 	.poll		= relay_file_poll,
@@ -1348,7 +1352,9 @@ const struct file_operations relay_file_operations = {
 	.read		= relay_file_read,
 	.llseek		= no_llseek,
 	.release	= relay_file_release,
+#ifdef CONFIG_SPLICE
 	.splice_read	= relay_file_splice_read,
+#endif /* CONFIG_SPLICE */
 };
 EXPORT_SYMBOL_GPL(relay_file_operations);
 

@@ -24,17 +24,25 @@ typedef ssize_t bin_convert_t(struct file *file,
 
 static bin_convert_t bin_dir;
 static bin_convert_t bin_string;
+#ifdef CONFIG_SPLICE
 static bin_convert_t bin_intvec;
 static bin_convert_t bin_ulongvec;
+#endif /* CONFIG_SPLICE */
 static bin_convert_t bin_uuid;
+#ifdef CONFIG_SPLICE
 static bin_convert_t bin_dn_node_address;
+#endif /* CONFIG_SPLICE */
 
 #define CTL_DIR   bin_dir
 #define CTL_STR   bin_string
+#ifdef CONFIG_SPLICE
 #define CTL_INT   bin_intvec
 #define CTL_ULONG bin_ulongvec
+#endif /* CONFIG_SPLICE */
 #define CTL_UUID  bin_uuid
+#ifdef CONFIG_SPLICE
 #define CTL_DNADR bin_dn_node_address
+#endif /* CONFIG_SPLICE */
 
 #define BUFSZ 256
 
@@ -46,18 +54,22 @@ struct bin_table {
 };
 
 static const struct bin_table bin_random_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	RANDOM_POOLSIZE,	"poolsize" },
 	{ CTL_INT,	RANDOM_ENTROPY_COUNT,	"entropy_avail" },
 	{ CTL_INT,	RANDOM_READ_THRESH,	"read_wakeup_threshold" },
 	{ CTL_INT,	RANDOM_WRITE_THRESH,	"write_wakeup_threshold" },
+#endif /* CONFIG_SPLICE */
 	{ CTL_UUID,	RANDOM_BOOT_ID,		"boot_id" },
 	{ CTL_UUID,	RANDOM_UUID,		"uuid" },
 	{}
 };
 
 static const struct bin_table bin_pty_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	PTY_MAX,	"max" },
 	{ CTL_INT,	PTY_NR,		"nr" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
@@ -71,10 +83,12 @@ static const struct bin_table bin_kern_table[] = {
 	{ CTL_STR,	KERN_NODENAME,			"hostname" },
 	{ CTL_STR,	KERN_DOMAINNAME,		"domainname" },
 
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	KERN_PANIC,			"panic" },
 	{ CTL_INT,	KERN_REALROOTDEV,		"real-root-dev" },
-
+#endif /* CONFIG_SPLICE */
 	{ CTL_STR,	KERN_SPARC_REBOOT,		"reboot-cmd" },
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	KERN_CTLALTDEL,			"ctrl-alt-del" },
 	{ CTL_INT,	KERN_PRINTK,			"printk" },
 
@@ -82,8 +96,9 @@ static const struct bin_table bin_kern_table[] = {
 	/* KERN_PPC_HTABRECLAIM not used */
 	/* KERN_PPC_ZEROPAGED not used */
 	{ CTL_INT,	KERN_PPC_POWERSAVE_NAP,		"powersave-nap" },
-
+#endif /* CONFIG_SPLICE */
 	{ CTL_STR,	KERN_MODPROBE,			"modprobe" },
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	KERN_SG_BIG_BUFF,		"sg-big-buff" },
 	{ CTL_INT,	KERN_ACCT,			"acct" },
 	/* KERN_PPC_L2CR "l2cr" no longer used */
@@ -97,7 +112,9 @@ static const struct bin_table bin_kern_table[] = {
 	/* KERN_MSGPOOL not used*/
 	{ CTL_INT,	KERN_SYSRQ,			"sysrq" },
 	{ CTL_INT,	KERN_MAX_THREADS,		"threads-max" },
+#endif /* CONFIG_SPLICE */
 	{ CTL_DIR,	KERN_RANDOM,			"random",	bin_random_table },
+#ifdef CONFIG_SPLICE
 	{ CTL_ULONG,	KERN_SHMALL,			"shmall" },
 	{ CTL_INT,	KERN_MSGMNI,			"msgmni" },
 	{ CTL_INT,	KERN_SEM,			"sem" },
@@ -106,8 +123,9 @@ static const struct bin_table bin_kern_table[] = {
 
 	{ CTL_INT,	KERN_OVERFLOWUID,		"overflowuid" },
 	{ CTL_INT,	KERN_OVERFLOWGID,		"overflowgid" },
-
+#endif /* CONFIG_SPLICE */
 	{ CTL_STR,	KERN_HOTPLUG,			"hotplug", },
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	KERN_IEEE_EMULATION_WARNINGS,	"ieee_emulation_warnings" },
 
 	{ CTL_INT,	KERN_S390_USER_DEBUG_LOGGING,	"userprocess_debug" },
@@ -115,15 +133,18 @@ static const struct bin_table bin_kern_table[] = {
 	/* KERN_TAINTED "tainted" no longer used */
 	{ CTL_INT,	KERN_CADPID,			"cad_pid" },
 	{ CTL_INT,	KERN_PIDMAX,			"pid_max" },
+#endif /* CONFIG_SPLICE */
 	{ CTL_STR,	KERN_CORE_PATTERN,		"core_pattern" },
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	KERN_PANIC_ON_OOPS,		"panic_on_oops" },
 	{ CTL_INT,	KERN_HPPA_PWRSW,		"soft-power" },
 	{ CTL_INT,	KERN_HPPA_UNALIGNED,		"unaligned-trap" },
 
 	{ CTL_INT,	KERN_PRINTK_RATELIMIT,		"printk_ratelimit" },
 	{ CTL_INT,	KERN_PRINTK_RATELIMIT_BURST,	"printk_ratelimit_burst" },
-
+#endif /* CONFIG_SPLICE */
 	{ CTL_DIR,	KERN_PTY,			"pty",		bin_pty_table },
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	KERN_NGROUPS_MAX,		"ngroups_max" },
 	{ CTL_INT,	KERN_SPARC_SCONS_PWROFF,	"scons-poweroff" },
 	/* KERN_HZ_TIMER "hz_timer" no longer used */
@@ -137,10 +158,12 @@ static const struct bin_table bin_kern_table[] = {
 	{ CTL_INT,	KERN_COMPAT_LOG,		"compat-log" },
 	{ CTL_INT,	KERN_MAX_LOCK_DEPTH,		"max_lock_depth" },
 	{ CTL_INT,	KERN_PANIC_ON_NMI,		"panic_on_unrecovered_nmi" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 static const struct bin_table bin_vm_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	VM_OVERCOMMIT_MEMORY,		"overcommit_memory" },
 	{ CTL_INT,	VM_PAGE_CLUSTER,		"page-cluster" },
 	{ CTL_INT,	VM_DIRTY_BACKGROUND,		"dirty_background_ratio" },
@@ -168,11 +191,12 @@ static const struct bin_table bin_vm_table[] = {
 	{ CTL_INT,	VM_PANIC_ON_OOM,		"panic_on_oom" },
 	{ CTL_INT,	VM_VDSO_ENABLED,		"vdso_enabled" },
 	{ CTL_INT,	VM_MIN_SLAB,			"min_slab_ratio" },
-
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 static const struct bin_table bin_net_core_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_CORE_WMEM_MAX,	"wmem_max" },
 	{ CTL_INT,	NET_CORE_RMEM_MAX,	"rmem_max" },
 	{ CTL_INT,	NET_CORE_WMEM_DEFAULT,	"wmem_default" },
@@ -195,17 +219,21 @@ static const struct bin_table bin_net_core_table[] = {
 	{ CTL_INT,	NET_CORE_AEVENT_ETIME,	"xfrm_aevent_etime" },
 	{ CTL_INT,	NET_CORE_AEVENT_RSEQTH,	"xfrm_aevent_rseqth" },
 	{ CTL_INT,	NET_CORE_WARNINGS,	"warnings" },
+#endif /* CONFIG_SPLICE */
 	{},
 };
 
 static const struct bin_table bin_net_unix_table[] = {
 	/* NET_UNIX_DESTROY_DELAY unused */
 	/* NET_UNIX_DELETE_DELAY unused */
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_UNIX_MAX_DGRAM_QLEN,	"max_dgram_qlen" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 static const struct bin_table bin_net_ipv4_route_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_IPV4_ROUTE_FLUSH,			"flush" },
 	/* NET_IPV4_ROUTE_MIN_DELAY "min_delay" no longer used */
 	/* NET_IPV4_ROUTE_MAX_DELAY "max_delay" no longer used */
@@ -224,10 +252,12 @@ static const struct bin_table bin_net_ipv4_route_table[] = {
 	{ CTL_INT,	NET_IPV4_ROUTE_MTU_EXPIRES,		"mtu_expires" },
 	{ CTL_INT,	NET_IPV4_ROUTE_MIN_PMTU,		"min_pmtu" },
 	{ CTL_INT,	NET_IPV4_ROUTE_MIN_ADVMSS,		"min_adv_mss" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 static const struct bin_table bin_net_ipv4_conf_vars_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_IPV4_CONF_FORWARDING,		"forwarding" },
 	{ CTL_INT,	NET_IPV4_CONF_MC_FORWARDING,		"mc_forwarding" },
 
@@ -252,6 +282,7 @@ static const struct bin_table bin_net_ipv4_conf_vars_table[] = {
 	{ CTL_INT,	NET_IPV4_CONF_NOPOLICY,			"disable_policy" },
 	{ CTL_INT,	NET_IPV4_CONF_FORCE_IGMP_VERSION,	"force_igmp_version" },
 	{ CTL_INT,	NET_IPV4_CONF_PROMOTE_SECONDARIES,	"promote_secondaries" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
@@ -263,6 +294,7 @@ static const struct bin_table bin_net_ipv4_conf_table[] = {
 };
 
 static const struct bin_table bin_net_neigh_vars_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_NEIGH_MCAST_SOLICIT,	"mcast_solicit" },
 	{ CTL_INT,	NET_NEIGH_UCAST_SOLICIT,	"ucast_solicit" },
 	{ CTL_INT,	NET_NEIGH_APP_SOLICIT,		"app_solicit" },
@@ -281,6 +313,7 @@ static const struct bin_table bin_net_neigh_vars_table[] = {
 	{ CTL_INT,	NET_NEIGH_GC_THRESH3,		"gc_thresh3" },
 	{ CTL_INT,	NET_NEIGH_RETRANS_TIME_MS,	"retrans_time_ms" },
 	{ CTL_INT,	NET_NEIGH_REACHABLE_TIME_MS,	"base_reachable_time_ms" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
@@ -291,6 +324,7 @@ static const struct bin_table bin_net_neigh_table[] = {
 };
 
 static const struct bin_table bin_net_ipv4_netfilter_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_IPV4_NF_CONNTRACK_MAX,		"ip_conntrack_max" },
 
 	/* NET_IPV4_NF_CONNTRACK_TCP_TIMEOUT_SYN_SENT "ip_conntrack_tcp_timeout_syn_sent" no longer used */
@@ -324,18 +358,21 @@ static const struct bin_table bin_net_ipv4_netfilter_table[] = {
 
 	{ CTL_INT,	NET_IPV4_NF_CONNTRACK_COUNT,		"ip_conntrack_count" },
 	{ CTL_INT,	NET_IPV4_NF_CONNTRACK_CHECKSUM,		"ip_conntrack_checksum" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 static const struct bin_table bin_net_ipv4_table[] = {
+#ifdef CONFIG_SPLICE
 	{CTL_INT,	NET_IPV4_FORWARD,			"ip_forward" },
+#endif /* CONFIG_SPLICE */
 
 	{ CTL_DIR,	NET_IPV4_CONF,		"conf",		bin_net_ipv4_conf_table },
 	{ CTL_DIR,	NET_IPV4_NEIGH,		"neigh",	bin_net_neigh_table },
 	{ CTL_DIR,	NET_IPV4_ROUTE,		"route",	bin_net_ipv4_route_table },
 	/* NET_IPV4_FIB_HASH unused */
 	{ CTL_DIR,	NET_IPV4_NETFILTER,	"netfilter",	bin_net_ipv4_netfilter_table },
-
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_IPV4_TCP_TIMESTAMPS,		"tcp_timestamps" },
 	{ CTL_INT,	NET_IPV4_TCP_WINDOW_SCALING,		"tcp_window_scaling" },
 	{ CTL_INT,	NET_IPV4_TCP_SACK,			"tcp_sack" },
@@ -415,7 +452,7 @@ static const struct bin_table bin_net_ipv4_table[] = {
 	/* NET_IPV4_IPFRAG_MAX_DIST "ipfrag_max_dist" no longer used */
 
 	{ CTL_INT,	2088 /* NET_IPQ_QMAX */,		"ip_queue_maxlen" },
-
+#endif /* CONFIG_SPLICE */
 	/* NET_TCP_DEFAULT_WIN_SCALE unused */
 	/* NET_TCP_BIC_BETA unused */
 	/* NET_IPV4_TCP_MAX_KA_PROBES unused */
@@ -431,20 +468,25 @@ static const struct bin_table bin_net_ipv4_table[] = {
 };
 
 static const struct bin_table bin_net_ipx_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_IPX_PPROP_BROADCASTING,	"ipx_pprop_broadcasting" },
+#endif /* CONFIG_SPLICE */
 	/* NET_IPX_FORWARDING unused */
 	{}
 };
 
 static const struct bin_table bin_net_atalk_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_ATALK_AARP_EXPIRY_TIME,		"aarp-expiry-time" },
 	{ CTL_INT,	NET_ATALK_AARP_TICK_TIME,		"aarp-tick-time" },
 	{ CTL_INT,	NET_ATALK_AARP_RETRANSMIT_LIMIT,	"aarp-retransmit-limit" },
 	{ CTL_INT,	NET_ATALK_AARP_RESOLVE_TIME,		"aarp-resolve-time" },
+#endif /* CONFIG_SPLICE */
 	{},
 };
 
 static const struct bin_table bin_net_netrom_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_NETROM_DEFAULT_PATH_QUALITY,		"default_path_quality" },
 	{ CTL_INT,	NET_NETROM_OBSOLESCENCE_COUNT_INITIALISER,	"obsolescence_count_initialiser" },
 	{ CTL_INT,	NET_NETROM_NETWORK_TTL_INITIALISER,		"network_ttl_initialiser" },
@@ -457,10 +499,12 @@ static const struct bin_table bin_net_netrom_table[] = {
 	{ CTL_INT,	NET_NETROM_ROUTING_CONTROL,			"routing_control" },
 	{ CTL_INT,	NET_NETROM_LINK_FAILS_COUNT,			"link_fails_count" },
 	{ CTL_INT,	NET_NETROM_RESET,				"reset" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 static const struct bin_table bin_net_ax25_param_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_AX25_IP_DEFAULT_MODE,	"ip_default_mode" },
 	{ CTL_INT,	NET_AX25_DEFAULT_MODE,		"ax25_default_mode" },
 	{ CTL_INT,	NET_AX25_BACKOFF_TYPE,		"backoff_type" },
@@ -475,6 +519,7 @@ static const struct bin_table bin_net_ax25_param_table[] = {
 	{ CTL_INT,	NET_AX25_PACLEN,		"maximum_packet_length" },
 	{ CTL_INT,	NET_AX25_PROTOCOL,		"protocol" },
 	{ CTL_INT,	NET_AX25_DAMA_SLAVE_TIMEOUT,	"dama_slave_timeout" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
@@ -484,6 +529,7 @@ static const struct bin_table bin_net_ax25_table[] = {
 };
 
 static const struct bin_table bin_net_rose_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_ROSE_RESTART_REQUEST_TIMEOUT,	"restart_request_timeout" },
 	{ CTL_INT,	NET_ROSE_CALL_REQUEST_TIMEOUT,		"call_request_timeout" },
 	{ CTL_INT,	NET_ROSE_RESET_REQUEST_TIMEOUT,		"reset_request_timeout" },
@@ -494,10 +540,12 @@ static const struct bin_table bin_net_rose_table[] = {
 	{ CTL_INT,	NET_ROSE_MAX_VCS,			"maximum_virtual_circuits" },
 	{ CTL_INT,	NET_ROSE_WINDOW_SIZE,			"window_size" },
 	{ CTL_INT,	NET_ROSE_NO_ACTIVITY_TIMEOUT,		"no_activity_timeout" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 static const struct bin_table bin_net_ipv6_conf_var_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_IPV6_FORWARDING,			"forwarding" },
 	{ CTL_INT,	NET_IPV6_HOP_LIMIT,			"hop_limit" },
 	{ CTL_INT,	NET_IPV6_MTU,				"mtu" },
@@ -522,6 +570,7 @@ static const struct bin_table bin_net_ipv6_conf_var_table[] = {
 	{ CTL_INT,	NET_IPV6_ACCEPT_RA_RT_INFO_MAX_PLEN,	"accept_ra_rt_info_max_plen" },
 	{ CTL_INT,	NET_IPV6_PROXY_NDP,			"proxy_ndp" },
 	{ CTL_INT,	NET_IPV6_ACCEPT_SOURCE_ROUTE,		"accept_source_route" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
@@ -533,6 +582,7 @@ static const struct bin_table bin_net_ipv6_conf_table[] = {
 };
 
 static const struct bin_table bin_net_ipv6_route_table[] = {
+#ifdef CONFIG_SPLICE
 	/* NET_IPV6_ROUTE_FLUSH	"flush"  no longer used */
 	{ CTL_INT,	NET_IPV6_ROUTE_GC_THRESH,		"gc_thresh" },
 	{ CTL_INT,	NET_IPV6_ROUTE_MAX_SIZE,		"max_size" },
@@ -543,11 +593,14 @@ static const struct bin_table bin_net_ipv6_route_table[] = {
 	{ CTL_INT,	NET_IPV6_ROUTE_MTU_EXPIRES,		"mtu_expires" },
 	{ CTL_INT,	NET_IPV6_ROUTE_MIN_ADVMSS,		"min_adv_mss" },
 	{ CTL_INT,	NET_IPV6_ROUTE_GC_MIN_INTERVAL_MS,	"gc_min_interval_ms" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 static const struct bin_table bin_net_ipv6_icmp_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_IPV6_ICMP_RATELIMIT,	"ratelimit" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
@@ -556,6 +609,7 @@ static const struct bin_table bin_net_ipv6_table[] = {
 	{ CTL_DIR,	NET_IPV6_NEIGH,		"neigh",	bin_net_neigh_table },
 	{ CTL_DIR,	NET_IPV6_ROUTE,		"route",	bin_net_ipv6_route_table },
 	{ CTL_DIR,	NET_IPV6_ICMP,		"icmp",		bin_net_ipv6_icmp_table },
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_IPV6_BINDV6ONLY,		"bindv6only" },
 	{ CTL_INT,	NET_IPV6_IP6FRAG_HIGH_THRESH,	"ip6frag_high_thresh" },
 	{ CTL_INT,	NET_IPV6_IP6FRAG_LOW_THRESH,	"ip6frag_low_thresh" },
@@ -563,30 +617,37 @@ static const struct bin_table bin_net_ipv6_table[] = {
 	{ CTL_INT,	NET_IPV6_IP6FRAG_SECRET_INTERVAL,	"ip6frag_secret_interval" },
 	{ CTL_INT,	NET_IPV6_MLD_MAX_MSF,		"mld_max_msf" },
 	{ CTL_INT,	2088 /* IPQ_QMAX */,		"ip6_queue_maxlen" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 static const struct bin_table bin_net_x25_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_X25_RESTART_REQUEST_TIMEOUT,	"restart_request_timeout" },
 	{ CTL_INT,	NET_X25_CALL_REQUEST_TIMEOUT,		"call_request_timeout" },
 	{ CTL_INT,	NET_X25_RESET_REQUEST_TIMEOUT,	"reset_request_timeout" },
 	{ CTL_INT,	NET_X25_CLEAR_REQUEST_TIMEOUT,	"clear_request_timeout" },
 	{ CTL_INT,	NET_X25_ACK_HOLD_BACK_TIMEOUT,	"acknowledgement_hold_back_timeout" },
 	{ CTL_INT,	NET_X25_FORWARD,			"x25_forward" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 static const struct bin_table bin_net_tr_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_TR_RIF_TIMEOUT,	"rif_timeout" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 
 static const struct bin_table bin_net_decnet_conf_vars[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_DECNET_CONF_DEV_FORWARDING,	"forwarding" },
 	{ CTL_INT,	NET_DECNET_CONF_DEV_PRIORITY,	"priority" },
 	{ CTL_INT,	NET_DECNET_CONF_DEV_T2,		"t2" },
 	{ CTL_INT,	NET_DECNET_CONF_DEV_T3,		"t3" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
@@ -603,9 +664,12 @@ static const struct bin_table bin_net_decnet_conf[] = {
 
 static const struct bin_table bin_net_decnet_table[] = {
 	{ CTL_DIR,	NET_DECNET_CONF,		"conf",	bin_net_decnet_conf },
+#ifdef CONFIG_SPLICE
 	{ CTL_DNADR,	NET_DECNET_NODE_ADDRESS,	"node_address" },
+#endif /* CONFIG_SPLICE */
 	{ CTL_STR,	NET_DECNET_NODE_NAME,		"node_name" },
 	{ CTL_STR,	NET_DECNET_DEFAULT_DEVICE,	"default_device" },
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_DECNET_TIME_WAIT,		"time_wait" },
 	{ CTL_INT,	NET_DECNET_DN_COUNT,		"dn_count" },
 	{ CTL_INT,	NET_DECNET_DI_COUNT,		"di_count" },
@@ -616,10 +680,12 @@ static const struct bin_table bin_net_decnet_table[] = {
 	{ CTL_INT,	NET_DECNET_RMEM,		"decnet_rmem" },
 	{ CTL_INT,	NET_DECNET_WMEM,		"decnet_wmem" },
 	{ CTL_INT,	NET_DECNET_DEBUG_LEVEL,	"debug" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 static const struct bin_table bin_net_sctp_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_SCTP_RTO_INITIAL,		"rto_initial" },
 	{ CTL_INT,	NET_SCTP_RTO_MIN,		"rto_min" },
 	{ CTL_INT,	NET_SCTP_RTO_MAX,		"rto_max" },
@@ -637,19 +703,24 @@ static const struct bin_table bin_net_sctp_table[] = {
 	{ CTL_INT,	NET_SCTP_SNDBUF_POLICY,		"sndbuf_policy" },
 	{ CTL_INT,	NET_SCTP_SACK_TIMEOUT,		"sack_timeout" },
 	{ CTL_INT,	NET_SCTP_RCVBUF_POLICY,		"rcvbuf_policy" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 static const struct bin_table bin_net_llc_llc2_timeout_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_LLC2_ACK_TIMEOUT,	"ack" },
 	{ CTL_INT,	NET_LLC2_P_TIMEOUT,	"p" },
 	{ CTL_INT,	NET_LLC2_REJ_TIMEOUT,	"rej" },
 	{ CTL_INT,	NET_LLC2_BUSY_TIMEOUT,	"busy" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 static const struct bin_table bin_net_llc_station_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_LLC_STATION_ACK_TIMEOUT,	"ack_timeout" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
@@ -665,6 +736,7 @@ static const struct bin_table bin_net_llc_table[] = {
 };
 
 static const struct bin_table bin_net_netfilter_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_NF_CONNTRACK_MAX,			"nf_conntrack_max" },
 	/* NET_NF_CONNTRACK_TCP_TIMEOUT_SYN_SENT "nf_conntrack_tcp_timeout_syn_sent" no longer used */
 	/* NET_NF_CONNTRACK_TCP_TIMEOUT_SYN_RECV "nf_conntrack_tcp_timeout_syn_recv" no longer used */
@@ -697,13 +769,16 @@ static const struct bin_table bin_net_netfilter_table[] = {
 	{ CTL_INT,	NET_NF_CONNTRACK_FRAG6_LOW_THRESH,	"nf_conntrack_frag6_low_thresh" },
 	{ CTL_INT,	NET_NF_CONNTRACK_FRAG6_HIGH_THRESH,	"nf_conntrack_frag6_high_thresh" },
 	{ CTL_INT,	NET_NF_CONNTRACK_CHECKSUM,		"nf_conntrack_checksum" },
-
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 static const struct bin_table bin_net_irda_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_IRDA_DISCOVERY,		"discovery" },
+#endif /* CONFIG_SPLICE */
 	{ CTL_STR,	NET_IRDA_DEVNAME,		"devname" },
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	NET_IRDA_DEBUG,			"debug" },
 	{ CTL_INT,	NET_IRDA_FAST_POLL,		"fast_poll_increase" },
 	{ CTL_INT,	NET_IRDA_DISCOVERY_SLOTS,	"discovery_slots" },
@@ -716,6 +791,7 @@ static const struct bin_table bin_net_irda_table[] = {
 	{ CTL_INT,	NET_IRDA_MAX_NOREPLY_TIME,	"max_noreply_time" },
 	{ CTL_INT,	NET_IRDA_WARN_NOREPLY_TIME,	"warn_noreply_time" },
 	{ CTL_INT,	NET_IRDA_LAP_KEEPALIVE_TIME,	"lap_keepalive_time" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
@@ -741,11 +817,14 @@ static const struct bin_table bin_net_table[] = {
 	{ CTL_DIR,	NET_NETFILTER,		"netfilter",	bin_net_netfilter_table },
 	/* NET_DCCP "dccp" no longer used */
 	{ CTL_DIR,	NET_IRDA,		"irda",		bin_net_irda_table },
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	2089,			"nf_conntrack_max" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 static const struct bin_table bin_fs_quota_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	FS_DQ_LOOKUPS,		"lookups" },
 	{ CTL_INT,	FS_DQ_DROPS,		"drops" },
 	{ CTL_INT,	FS_DQ_READS,		"reads" },
@@ -755,10 +834,12 @@ static const struct bin_table bin_fs_quota_table[] = {
 	{ CTL_INT,	FS_DQ_FREE,		"free_dquots" },
 	{ CTL_INT,	FS_DQ_SYNCS,		"syncs" },
 	{ CTL_INT,	FS_DQ_WARNINGS,		"warnings" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 static const struct bin_table bin_fs_xfs_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	XFS_SGID_INHERIT,	"irix_sgid_inherit" },
 	{ CTL_INT,	XFS_SYMLINK_MODE,	"irix_symlink_mode" },
 	{ CTL_INT,	XFS_PANIC_MASK,		"panic_mask" },
@@ -775,6 +856,7 @@ static const struct bin_table bin_fs_xfs_table[] = {
 	{ CTL_INT,	XFS_INHERIT_NODFRG,	"inherit_nodefrag" },
 	{ CTL_INT,	XFS_FILESTREAM_TIMER,	"filestream_centisecs" },
 	{ CTL_INT,	XFS_STATS_CLEAR,	"stats_clear" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
@@ -789,13 +871,16 @@ static const struct bin_table bin_fs_ocfs2_table[] = {
 };
 
 static const struct bin_table bin_inotify_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	INOTIFY_MAX_USER_INSTANCES,	"max_user_instances" },
 	{ CTL_INT,	INOTIFY_MAX_USER_WATCHES,	"max_user_watches" },
 	{ CTL_INT,	INOTIFY_MAX_QUEUED_EVENTS,	"max_queued_events" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 static const struct bin_table bin_fs_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	FS_NRINODE,		"inode-nr" },
 	{ CTL_INT,	FS_STATINODE,		"inode-state" },
 	/* FS_MAXINODE unused */
@@ -811,39 +896,52 @@ static const struct bin_table bin_fs_table[] = {
 	{ CTL_INT,	FS_LEASES,		"leases-enable" },
 	{ CTL_INT,	FS_DIR_NOTIFY,		"dir-notify-enable" },
 	{ CTL_INT,	FS_LEASE_TIME,		"lease-break-time" },
+#endif /* CONFIG_SPLICE */
 	{ CTL_DIR,	FS_DQSTATS,		"quota",	bin_fs_quota_table },
 	{ CTL_DIR,	FS_XFS,			"xfs",		bin_fs_xfs_table },
+#ifdef CONFIG_SPLICE
 	{ CTL_ULONG,	FS_AIO_NR,		"aio-nr" },
 	{ CTL_ULONG,	FS_AIO_MAX_NR,		"aio-max-nr" },
+#endif /* CONFIG_SPLICE */
 	{ CTL_DIR,	FS_INOTIFY,		"inotify",	bin_inotify_table },
 	{ CTL_DIR,	FS_OCFS2,		"ocfs2",	bin_fs_ocfs2_table },
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	KERN_SETUID_DUMPABLE,	"suid_dumpable" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 static const struct bin_table bin_ipmi_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	DEV_IPMI_POWEROFF_POWERCYCLE,	"poweroff_powercycle" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 static const struct bin_table bin_mac_hid_files[] = {
 	/* DEV_MAC_HID_KEYBOARD_SENDS_LINUX_KEYCODES unused */
 	/* DEV_MAC_HID_KEYBOARD_LOCK_KEYCODES unused */
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	DEV_MAC_HID_MOUSE_BUTTON_EMULATION,	"mouse_button_emulation" },
 	{ CTL_INT,	DEV_MAC_HID_MOUSE_BUTTON2_KEYCODE,	"mouse_button2_keycode" },
 	{ CTL_INT,	DEV_MAC_HID_MOUSE_BUTTON3_KEYCODE,	"mouse_button3_keycode" },
+#endif /* CONFIG_SPLICE */
 	/* DEV_MAC_HID_ADB_MOUSE_SENDS_KEYCODES unused */
 	{}
 };
 
 static const struct bin_table bin_raid_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	DEV_RAID_SPEED_LIMIT_MIN,	"speed_limit_min" },
 	{ CTL_INT,	DEV_RAID_SPEED_LIMIT_MAX,	"speed_limit_max" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 static const struct bin_table bin_scsi_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT, DEV_SCSI_LOGGING_LEVEL, "logging_level" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
@@ -859,9 +957,11 @@ static const struct bin_table bin_dev_table[] = {
 };
 
 static const struct bin_table bin_bus_isa_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	BUS_ISA_MEM_BASE,	"membase" },
 	{ CTL_INT,	BUS_ISA_PORT_BASE,	"portbase" },
 	{ CTL_INT,	BUS_ISA_PORT_SHIFT,	"portshift" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
@@ -872,8 +972,10 @@ static const struct bin_table bin_bus_table[] = {
 
 
 static const struct bin_table bin_s390dbf_table[] = {
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	5678 /* CTL_S390DBF_STOPPABLE */, "debug_stoppable" },
 	{ CTL_INT,	5679 /* CTL_S390DBF_ACTIVE */,	  "debug_active" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
@@ -882,20 +984,23 @@ static const struct bin_table bin_sunrpc_table[] = {
 	/* CTL_NFSDEBUG "nfs_debug"  no longer used */
 	/* CTL_NFSDDEBUG "nfsd_debug" no longer used  */
 	/* CTL_NLMDEBUG "nlm_debug" no longer used */
-
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	CTL_SLOTTABLE_UDP,	"udp_slot_table_entries" },
 	{ CTL_INT,	CTL_SLOTTABLE_TCP,	"tcp_slot_table_entries" },
 	{ CTL_INT,	CTL_MIN_RESVPORT,	"min_resvport" },
 	{ CTL_INT,	CTL_MAX_RESVPORT,	"max_resvport" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
 static const struct bin_table bin_pm_table[] = {
 	/* frv specific */
 	/* 1 == CTL_PM_SUSPEND	"suspend"  no longer used" */
+#ifdef CONFIG_SPLICE
 	{ CTL_INT,	2 /* CTL_PM_CMODE */,		"cmode" },
 	{ CTL_INT,	3 /* CTL_PM_P0 */,		"p0" },
 	{ CTL_INT,	4 /* CTL_PM_CM */,		"cm" },
+#endif /* CONFIG_SPLICE */
 	{}
 };
 
@@ -966,6 +1071,8 @@ static ssize_t bin_string(struct file *file,
 out:
 	return result;
 }
+
+#ifdef CONFIG_SPLICE
 
 static ssize_t bin_intvec(struct file *file,
 	void __user *oldval, size_t oldlen, void __user *newval, size_t newlen)
@@ -1109,6 +1216,8 @@ out:
 	return result;
 }
 
+#endif /* CONFIG_SPLICE */
+
 static ssize_t bin_uuid(struct file *file,
 	void __user *oldval, size_t oldlen, void __user *newval, size_t newlen)
 {
@@ -1152,6 +1261,8 @@ static ssize_t bin_uuid(struct file *file,
 out:
 	return result;
 }
+
+#ifdef CONFIG_SPLICE
 
 static ssize_t bin_dn_node_address(struct file *file,
 	void __user *oldval, size_t oldlen, void __user *newval, size_t newlen)
@@ -1218,6 +1329,8 @@ static ssize_t bin_dn_node_address(struct file *file,
 out:
 	return result;
 }
+
+#endif /* CONFIG_SPLICE */
 
 static const struct bin_table *get_sysctl(const int *name, int nlen, char *path)
 {

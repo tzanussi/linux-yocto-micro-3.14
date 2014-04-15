@@ -1533,6 +1533,16 @@ config EVENTFD
 
 	  If unsure, say Y.
 
+config SPLICE
+	bool "Enable splice() system call" if EXPERT
+	default y
+	help
+	  Enable the splice() system call which moves data between two
+          file descriptors without copying between kernel address
+          space and user address space.
+
+	  If unsure, say Y.
+
 config SHMEM
 	bool "Use full shmem filesystem" if EXPERT
 	default y

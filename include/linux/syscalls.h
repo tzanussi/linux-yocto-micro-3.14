@@ -490,10 +490,12 @@ asmlinkage long sys_io_submit(aio_context_t, long,
 				struct iocb __user * __user *);
 asmlinkage long sys_io_cancel(aio_context_t ctx_id, struct iocb __user *iocb,
 			      struct io_event __user *result);
+#ifdef CONFIG_SPLICE
 asmlinkage long sys_sendfile(int out_fd, int in_fd,
 			     off_t __user *offset, size_t count);
 asmlinkage long sys_sendfile64(int out_fd, int in_fd,
 			       loff_t __user *offset, size_t count);
+#endif /* CONFIG_SPLICE */
 asmlinkage long sys_readlink(const char __user *path,
 				char __user *buf, int bufsiz);
 asmlinkage long sys_creat(const char __user *pathname, umode_t mode);
@@ -763,14 +765,15 @@ asmlinkage long sys_utimensat(int dfd, const char __user *filename,
 				struct timespec __user *utimes, int flags);
 asmlinkage long sys_unshare(unsigned long unshare_flags);
 
+#ifdef CONFIG_SPLICE
 asmlinkage long sys_splice(int fd_in, loff_t __user *off_in,
 			   int fd_out, loff_t __user *off_out,
 			   size_t len, unsigned int flags);
-
 asmlinkage long sys_vmsplice(int fd, const struct iovec __user *iov,
 			     unsigned long nr_segs, unsigned int flags);
 
 asmlinkage long sys_tee(int fdin, int fdout, size_t len, unsigned int flags);
+#endif /* CONFIG_SPLICE */
 
 asmlinkage long sys_sync_file_range(int fd, loff_t offset, loff_t nbytes,
 					unsigned int flags);

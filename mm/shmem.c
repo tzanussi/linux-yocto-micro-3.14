@@ -1600,6 +1600,8 @@ static ssize_t shmem_file_aio_read(struct kiocb *iocb,
 	return retval;
 }
 
+#ifdef CONFIG_SPLICE
+
 static ssize_t shmem_file_splice_read(struct file *in, loff_t *ppos,
 				struct pipe_inode_info *pipe, size_t len,
 				unsigned int flags)
@@ -1713,6 +1715,8 @@ static ssize_t shmem_file_splice_read(struct file *in, loff_t *ppos,
 	}
 	return error;
 }
+
+#endif /* CONFIG_SPLICE */
 
 /*
  * llseek SEEK_DATA or SEEK_HOLE through the radix_tree.
@@ -2713,8 +2717,10 @@ static const struct file_operations shmem_file_operations = {
 	.aio_read	= shmem_file_aio_read,
 	.aio_write	= generic_file_aio_write,
 	.fsync		= noop_fsync,
+#ifdef CONFIG_SPLICE
 	.splice_read	= shmem_file_splice_read,
 	.splice_write	= generic_file_splice_write,
+#endif /* CONFIG_SPLICE */
 	.fallocate	= shmem_fallocate,
 #endif
 };

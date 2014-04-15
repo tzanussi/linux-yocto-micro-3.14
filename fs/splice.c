@@ -34,6 +34,8 @@
 #include <linux/compat.h>
 #include "internal.h"
 
+#ifdef CONFIG_SPLICE
+
 /*
  * Attempt to steal a page from a pipe buffer. This should perhaps go into
  * a vm helper function, it's already simplified quite a bit by the
@@ -2104,3 +2106,33 @@ SYSCALL_DEFINE4(tee, int, fdin, int, fdout, size_t, len, unsigned int, flags)
 
 	return error;
 }
+
+#else
+ssize_t generic_file_splice_read(struct file *in, loff_t *ppos,
+				 struct pipe_inode_info *pipe, size_t len,
+				 unsigned int flags)
+{
+	return 0;
+}
+
+ssize_t default_file_splice_read(struct file *in, loff_t *ppos,
+				 struct pipe_inode_info *pipe, size_t len,
+				 unsigned int flags)
+{
+	return 0;
+}
+
+ssize_t
+generic_file_splice_write(struct pipe_inode_info *pipe, struct file *out,
+			  loff_t *ppos, size_t len, unsigned int flags)
+{
+	return 0;
+}
+
+ssize_t generic_splice_sendpage(struct pipe_inode_info *pipe, struct file *out,
+				loff_t *ppos, size_t len, unsigned int flags)
+{
+	return 0;
+}
+
+#endif /* CONFIG_SPLICE */

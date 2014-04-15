@@ -935,6 +935,8 @@ ssize_t trace_seq_to_user(struct trace_seq *s, char __user *ubuf, size_t cnt)
 	return cnt;
 }
 
+#ifdef CONFIG_SPLICE
+
 static ssize_t trace_seq_to_buffer(struct trace_seq *s, void *buf, size_t cnt)
 {
 	int len;
@@ -950,6 +952,8 @@ static ssize_t trace_seq_to_buffer(struct trace_seq *s, void *buf, size_t cnt)
 	s->readpos += cnt;
 	return cnt;
 }
+
+#endif /* CONFIG_SPLICE */
 
 /*
  * ftrace_max_lock is used to protect the swapping of buffers
@@ -4308,6 +4312,8 @@ out:
 	return sret;
 }
 
+#ifdef CONFIG_SPLICE
+
 static void tracing_spd_release_pipe(struct splice_pipe_desc *spd,
 				     unsigned int idx)
 {
@@ -4448,6 +4454,8 @@ out_err:
 	mutex_unlock(&iter->mutex);
 	goto out;
 }
+
+#endif /* CONFIG_SPLICE */
 
 static ssize_t
 tracing_entries_read(struct file *filp, char __user *ubuf,
@@ -4911,8 +4919,11 @@ static int tracing_buffers_open(struct inode *inode, struct file *filp);
 static ssize_t tracing_buffers_read(struct file *filp, char __user *ubuf,
 				    size_t count, loff_t *ppos);
 static int tracing_buffers_release(struct inode *inode, struct file *file);
+
+#ifdef CONFIG_SPLICE
 static ssize_t tracing_buffers_splice_read(struct file *file, loff_t *ppos,
 		   struct pipe_inode_info *pipe, size_t len, unsigned int flags);
+#endif /* CONFIG_SPLICE */
 
 static int snapshot_raw_open(struct inode *inode, struct file *filp)
 {
@@ -4957,7 +4968,9 @@ static const struct file_operations tracing_pipe_fops = {
 	.open		= tracing_open_pipe,
 	.poll		= tracing_poll_pipe,
 	.read		= tracing_read_pipe,
+#ifdef CONFIG_SPLICE
 	.splice_read	= tracing_splice_read_pipe,
+#endif /* CONFIG_SPLICE */
 	.release	= tracing_release_pipe,
 	.llseek		= no_llseek,
 };
@@ -5011,7 +5024,9 @@ static const struct file_operations snapshot_raw_fops = {
 	.open		= snapshot_raw_open,
 	.read		= tracing_buffers_read,
 	.release	= tracing_buffers_release,
+#ifdef CONFIG_SPLICE
 	.splice_read	= tracing_buffers_splice_read,
+#endif /* CONFIG_SPLICE */
 	.llseek		= no_llseek,
 };
 
@@ -5163,6 +5178,8 @@ static int tracing_buffers_release(struct inode *inode, struct file *file)
 
 	return 0;
 }
+
+#ifdef CONFIG_SPLICE
 
 struct buffer_ref {
 	struct ring_buffer	*buffer;
@@ -5342,12 +5359,16 @@ out:
 	return ret;
 }
 
+#endif /* CONFIG_SPLICE */
+
 static const struct file_operations tracing_buffers_fops = {
 	.open		= tracing_buffers_open,
 	.read		= tracing_buffers_read,
 	.poll		= tracing_buffers_poll,
 	.release	= tracing_buffers_release,
+#ifdef CONFIG_SPLICE
 	.splice_read	= tracing_buffers_splice_read,
+#endif /* CONFIG_SPLICE */
 	.llseek		= no_llseek,
 };
 

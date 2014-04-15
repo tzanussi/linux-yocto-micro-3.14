@@ -214,3 +214,13 @@ cond_syscall(sys_kcmp);
 cond_syscall(stub_iopl);
 cond_syscall(sys_iopl);
 cond_syscall(sys_ioperm);
+
+/* splice-related syscalls */
+cond_syscall(sys_splice);
+cond_syscall(sys_vmsplice);
+cond_syscall(sys_tee);
+cond_syscall(sys_sendfile);
+cond_syscall(sys_sendfile64);
+cond_syscall(compat_sys_vmsplice);
+cond_syscall(compat_sys_sendfile);
+cond_syscall(compat_sys_sendfile64);
