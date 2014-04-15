@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Disable splice system call"
+define KFEATURE_COMPATIBILITY arch
+
+kconf non-hardware splice-disable.cfg
