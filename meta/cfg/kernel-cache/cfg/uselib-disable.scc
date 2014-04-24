@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Disable uselib system call"
+define KFEATURE_COMPATIBILITY arch
+
+kconf non-hardware uselib-disable.cfg
