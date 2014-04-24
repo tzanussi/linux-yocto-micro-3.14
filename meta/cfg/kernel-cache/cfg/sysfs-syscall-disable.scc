@@ -1,0 +1,4 @@
+define KFEATURE_DESCRIPTION "Disable sysfs system call"
+define KFEATURE_COMPATIBILITY arch
+
+kconf non-hardware sysfs-syscall-disable.cfg
