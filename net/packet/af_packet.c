@@ -1543,6 +1543,8 @@ static void fanout_release(struct sock *sk)
 static void __fanout_unlink(struct sock *sk, struct packet_sock *po) {}
 static void __fanout_link(struct sock *sk, struct packet_sock *po) {}
 static void fanout_release(struct sock *sk) {}
+static int packet_alloc_pending(struct packet_sock *po) { return 0; }
+static void packet_free_pending(struct packet_sock *po) {}
 #endif
 
 static const struct proto_ops packet_ops;
